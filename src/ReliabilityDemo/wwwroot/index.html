@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Data Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.2em;
+            font-weight: 300;
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .demo-toggle {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .demo-toggle:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .demo-controls a {
+            color: #7f8c8d;
+            text-decoration: none;
+            font-size: 0.9em;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .demo-controls a:hover {
+            background: rgba(127, 140, 141, 0.1);
+            color: #2c3e50;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h2 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            font-weight: 400;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #34495e;
+            font-weight: 500;
+            font-size: 0.95em;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            background: white;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn.success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn.success:hover {
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn.danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn.danger:hover {
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            font-weight: 500;
+            animation: slideIn 0.3s ease;
+        }
+
+        .alert.success {
+            background: rgba(39, 174, 96, 0.1);
+            color: #27ae60;
+            border: 1px solid rgba(39, 174, 96, 0.3);
+        }
+
+        .alert.error {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+
+        .alert.warning {
+            background: rgba(241, 196, 15, 0.1);
+            color: #f39c12;
+            border: 1px solid rgba(241, 196, 15, 0.3);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .data-table th, .data-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .data-table tr:hover {
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .demo-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            width: 300px;
+            display: none;
+        }
+
+        .demo-panel.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        .demo-panel h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .slider-group {
+            margin-bottom: 15px;
+        }
+
+        .slider-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #34495e;
+            font-size: 0.9em;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #ecf0f1;
+            outline: none;
+        }
+
+        .slider-value {
+            background: #3498db;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ecf0f1;
+            border-radius: 50%;
+            border-top-color: #3498db;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .demo-panel {
+                position: relative;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Customer Data Portal</h1>
+        <div class="demo-controls">
+            <button class="demo-toggle" onclick="toggleDemoPanel()">Demo Controls</button>
+            <a href="/technical.html" target="_blank">Technical View</a>
+        </div>
+    </div>
+
+    <div class="demo-panel" id="demoPanel">
+        <h3>Failure Simulation</h3>
+        <div class="slider-group">
+            <label>Connection Failures:</label>
+            <div class="slider-container">
+                <input type="range" id="connectionFailureRate" min="0" max="1" step="0.01" value="0">
+                <span class="slider-value" id="connectionFailureValue">0%</span>
+            </div>
+        </div>
+        
+        <div class="slider-group">
+            <label>Read Timeouts:</label>
+            <div class="slider-container">
+                <input type="range" id="readTimeoutRate" min="0" max="1" step="0.01" value="0">
+                <span class="slider-value" id="readTimeoutValue">0%</span>
+            </div>
+        </div>
+        
+        <div class="slider-group">
+            <label>Write Timeouts:</label>
+            <div class="slider-container">
+                <input type="range" id="writeTimeoutRate" min="0" max="1" step="0.01" value="0">
+                <span class="slider-value" id="writeTimeoutValue">0%</span>
+            </div>
+        </div>
+        
+        <div class="slider-group">
+            <label>Slow Responses:</label>
+            <div class="slider-container">
+                <input type="range" id="slowResponseRate" min="0" max="1" step="0.01" value="0">
+                <span class="slider-value" id="slowResponseValue">0%</span>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="updateFailureConfig()">Apply Changes</button>
+        <button class="btn danger" onclick="resetFailureConfig()">Reset</button>
+    </div>
+
+    <div class="main-container">
+        <div class="card">
+            <h2>Add New Customer</h2>
+            <div class="form-group">
+                <label for="customerName">Name *</label>
+                <input type="text" id="customerName" placeholder="Enter customer name" value="John Doe">
+            </div>
+            
+            <div class="form-group">
+                <label for="customerEmail">Email *</label>
+                <input type="email" id="customerEmail" placeholder="Enter email address" value="john@example.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="customerPhone">Phone</label>
+                <input type="tel" id="customerPhone" placeholder="Enter phone number" value="+1-555-0123">
+            </div>
+            
+            <div class="form-group">
+                <label for="customerAddress">Address</label>
+                <textarea id="customerAddress" rows="3" placeholder="Enter customer address">123 Main St, Anytown, USA</textarea>
+            </div>
+            
+            <button class="btn success" onclick="createCustomer()">
+                <span id="createLoading" class="loading" style="display: none;"></span>
+                Create Customer
+            </button>
+            
+            <div id="createStatus"></div>
+        </div>
+
+        <div class="card">
+            <h2>Find Customer</h2>
+            <div class="form-group">
+                <label for="lookupId">Customer ID</label>
+                <input type="number" id="lookupId" placeholder="Enter customer ID" value="1" min="1">
+            </div>
+            
+            <button class="btn" onclick="lookupCustomer()">
+                <span id="lookupLoading" class="loading" style="display: none;"></span>
+                Find Customer
+            </button>
+            <button class="btn" onclick="viewAllCustomers()">
+                <span id="viewAllLoading" class="loading" style="display: none;"></span>
+                View All Customers
+            </button>
+            
+            <div id="lookupStatus"></div>
+            <div id="customerDetails"></div>
+        </div>
+    </div>
+
+    <div class="main-container" style="margin-top: 30px;">
+        <div class="card" style="grid-column: 1 / -1;">
+            <h2>Customer Database</h2>
+            <div id="customerTable"></div>
+        </div>
+    </div>
+
+    <script>
+        let demoControlsVisible = false;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSliders();
+            loadFailureConfig();
+            refreshCustomerTable();
+        });
+
+        function toggleDemoPanel() {
+            const panel = document.getElementById('demoPanel');
+            demoControlsVisible = !demoControlsVisible;
+            
+            if (demoControlsVisible) {
+                panel.classList.add('active');
+            } else {
+                panel.classList.remove('active');
+            }
+        }
+
+        function initializeSliders() {
+            const sliders = ['connectionFailureRate', 'readTimeoutRate', 'writeTimeoutRate', 'slowResponseRate'];
+            sliders.forEach(slider => {
+                const element = document.getElementById(slider);
+                const valueElement = document.getElementById(slider.replace('Rate', 'Value'));
+                
+                element.addEventListener('input', function() {
+                    valueElement.textContent = Math.round(this.value * 100) + '%';
+                });
+                
+                valueElement.textContent = Math.round(element.value * 100) + '%';
+            });
+        }
+
+        function showAlert(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="alert ${type}">${message}</div>`;
+            setTimeout(() => {
+                element.innerHTML = '';
+            }, 5000);
+        }
+
+        function showLoading(loadingId, show) {
+            const element = document.getElementById(loadingId);
+            element.style.display = show ? 'inline-block' : 'none';
+        }
+
+        async function loadFailureConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                
+                document.getElementById('connectionFailureRate').value = config.connectionFailureRate || 0;
+                document.getElementById('readTimeoutRate').value = config.readTimeoutRate || 0;
+                document.getElementById('writeTimeoutRate').value = config.writeTimeoutRate || 0;
+                document.getElementById('slowResponseRate').value = config.slowResponseRate || 0;
+                
+                initializeSliders();
+            } catch (error) {
+                console.error('Failed to load failure configuration:', error);
+            }
+        }
+
+        async function updateFailureConfig() {
+            const config = {
+                connectionFailureRate: parseFloat(document.getElementById('connectionFailureRate').value),
+                readTimeoutRate: parseFloat(document.getElementById('readTimeoutRate').value),
+                writeTimeoutRate: parseFloat(document.getElementById('writeTimeoutRate').value),
+                slowResponseRate: parseFloat(document.getElementById('slowResponseRate').value),
+                readTimeoutMs: 750,
+                writeTimeoutMs: 750,
+                slowResponseDelayMs: 2000
+            };
+
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                if (response.ok) {
+                    console.log('Failure configuration updated');
+                } else {
+                    console.error('Failed to update failure configuration');
+                }
+            } catch (error) {
+                console.error('Error updating failure configuration:', error);
+            }
+        }
+
+        async function resetFailureConfig() {
+            try {
+                const response = await fetch('/api/config/reset', { method: 'POST' });
+                if (response.ok) {
+                    await loadFailureConfig();
+                    console.log('Failure configuration reset');
+                }
+            } catch (error) {
+                console.error('Error resetting failure configuration:', error);
+            }
+        }
+
+        async function createCustomer() {
+            const name = document.getElementById('customerName').value.trim();
+            const email = document.getElementById('customerEmail').value.trim();
+            const phone = document.getElementById('customerPhone').value.trim();
+            const address = document.getElementById('customerAddress').value.trim();
+
+            if (!name || !email) {
+                showAlert('createStatus', 'Please fill in both Name and Email (required fields)', 'warning');
+                return;
+            }
+
+            const customerData = {
+                name: name,
+                email: email,
+                phone: phone || null,
+                address: address || null
+            };
+
+            showLoading('createLoading', true);
+
+            try {
+                const response = await fetch('/api/customers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(customerData)
+                });
+
+                if (response.ok) {
+                    const createdCustomer = await response.json();
+                    showAlert('createStatus', `Customer created successfully with ID: ${createdCustomer.id}`, 'success');
+                    refreshCustomerTable();
+                    
+                    // Clear the form
+                    document.getElementById('customerName').value = '';
+                    document.getElementById('customerEmail').value = '';
+                    document.getElementById('customerPhone').value = '';
+                    document.getElementById('customerAddress').value = '';
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to create customer');
+                }
+            } catch (error) {
+                if (error.message.includes('timeout')) {
+                    showAlert('createStatus', 'Request timed out - please try again', 'error');
+                } else if (error.message.includes('service unavailable')) {
+                    showAlert('createStatus', 'Service temporarily unavailable - please try again', 'error');
+                } else {
+                    showAlert('createStatus', `Error: ${error.message}`, 'error');
+                }
+            } finally {
+                showLoading('createLoading', false);
+            }
+        }
+
+        async function lookupCustomer() {
+            const lookupId = document.getElementById('lookupId').value.trim();
+
+            if (!lookupId) {
+                showAlert('lookupStatus', 'Please enter a Customer ID to lookup', 'warning');
+                return;
+            }
+
+            showLoading('lookupLoading', true);
+            document.getElementById('customerDetails').innerHTML = '';
+
+            try {
+                const response = await fetch(`/api/customers/${lookupId}`);
+
+                if (response.ok) {
+                    const customer = await response.json();
+                    const detailsHtml = `
+                        <div class="alert success">
+                            <h4>Customer Found (ID: ${customer.id})</h4>
+                            <table class="data-table">
+                                <tr><td><strong>Name</strong></td><td>${customer.name}</td></tr>
+                                <tr><td><strong>Email</strong></td><td>${customer.email}</td></tr>
+                                <tr><td><strong>Phone</strong></td><td>${customer.phone || 'Not provided'}</td></tr>
+                                <tr><td><strong>Address</strong></td><td>${customer.address || 'Not provided'}</td></tr>
+                                <tr><td><strong>Created</strong></td><td>${new Date(customer.createdAt).toLocaleString()}</td></tr>
+                                <tr><td><strong>Updated</strong></td><td>${customer.updatedAt ? new Date(customer.updatedAt).toLocaleString() : 'Never'}</td></tr>
+                            </table>
+                            <div style="margin-top: 15px;">
+                                <button class="btn danger" onclick="deleteCustomer(${customer.id})">Delete Customer</button>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('customerDetails').innerHTML = detailsHtml;
+                    showAlert('lookupStatus', `Customer ${lookupId} found`, 'success');
+                } else if (response.status === 404) {
+                    showAlert('lookupStatus', `Customer ${lookupId} not found`, 'warning');
+                    document.getElementById('customerDetails').innerHTML = '';
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to lookup customer');
+                }
+            } catch (error) {
+                if (error.message.includes('timeout')) {
+                    showAlert('lookupStatus', 'Request timed out - please try again', 'error');
+                } else if (error.message.includes('service unavailable')) {
+                    showAlert('lookupStatus', 'Service temporarily unavailable - please try again', 'error');
+                } else {
+                    showAlert('lookupStatus', `Error: ${error.message}`, 'error');
+                }
+                document.getElementById('customerDetails').innerHTML = '';
+            } finally {
+                showLoading('lookupLoading', false);
+            }
+        }
+
+        async function viewAllCustomers() {
+            showLoading('viewAllLoading', true);
+
+            try {
+                const response = await fetch('/api/customers');
+
+                if (response.ok) {
+                    const customers = await response.json();
+                    const count = customers.length;
+                    showAlert('lookupStatus', `Found ${count} customers in database`, 'success');
+                    refreshCustomerTable();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to retrieve customers');
+                }
+            } catch (error) {
+                if (error.message.includes('timeout')) {
+                    showAlert('lookupStatus', 'Request timed out - please try again', 'error');
+                } else if (error.message.includes('service unavailable')) {
+                    showAlert('lookupStatus', 'Service temporarily unavailable - please try again', 'error');
+                } else {
+                    showAlert('lookupStatus', `Error: ${error.message}`, 'error');
+                }
+            } finally {
+                showLoading('viewAllLoading', false);
+            }
+        }
+
+        async function deleteCustomer(customerId) {
+            if (!confirm(`Are you sure you want to delete customer ${customerId}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/customers/${customerId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showAlert('lookupStatus', `Customer ${customerId} deleted successfully`, 'success');
+                    document.getElementById('customerDetails').innerHTML = '';
+                    refreshCustomerTable();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to delete customer');
+                }
+            } catch (error) {
+                if (error.message.includes('timeout')) {
+                    showAlert('lookupStatus', 'Delete request timed out - please try again', 'error');
+                } else if (error.message.includes('service unavailable')) {
+                    showAlert('lookupStatus', 'Service temporarily unavailable - please try again', 'error');
+                } else {
+                    showAlert('lookupStatus', `Error: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function refreshCustomerTable() {
+            try {
+                const response = await fetch('/api/customers');
+                
+                if (response.ok) {
+                    const customers = await response.json();
+                    const tableElement = document.getElementById('customerTable');
+                    
+                    if (customers.length === 0) {
+                        tableElement.innerHTML = '<div class="alert warning">No customers found in database</div>';
+                        return;
+                    }
+
+                    let tableHtml = `
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Address</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    customers.forEach(customer => {
+                        tableHtml += `
+                            <tr>
+                                <td>${customer.id}</td>
+                                <td>${customer.name}</td>
+                                <td>${customer.email}</td>
+                                <td>${customer.phone || '-'}</td>
+                                <td>${customer.address || '-'}</td>
+                                <td>${new Date(customer.createdAt).toLocaleDateString()}</td>
+                                <td>
+                                    <button class="btn danger" onclick="deleteCustomer(${customer.id})" style="padding: 6px 12px; font-size: 0.8em;">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    tableHtml += '</tbody></table>';
+                    tableElement.innerHTML = tableHtml;
+                } else {
+                    document.getElementById('customerTable').innerHTML = 
+                        '<div class="alert error">Failed to load customer data</div>';
+                }
+            } catch (error) {
+                document.getElementById('customerTable').innerHTML = 
+                    '<div class="alert error">Error loading customer data</div>';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+# Reliability Demo application configuration
+replicaCount: 3
+
+image:
+  repository: sixeyed/reliability-demo
+  tag: "m1-01"
+  pullPolicy: Always
+
+service:
+  type: LoadBalancer
+  port: 8080
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "200m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+# Application configuration
+config:
+  # Data store provider: Redis or SqlServer
+  dataStore:
+    provider: "Redis"
+  failureConfig:
+    connectionFailureRate: 0.1
+    readTimeoutRate: 0.05
+    writeTimeoutRate: 0.05
+    slowResponseRate: 0.1
+    readTimeoutMs: 1000
+    writeTimeoutMs: 1000
+    slowResponseDelayMs: 3000
+  redisDataStore:
+    maxConcurrentClients: 10
+  sqlServerDataStore:
+    maxConcurrentClients: 10
+    autoMigrate: true
+
+# Redis dependency configuration (Bitnami chart)
+redis:
+  enabled: false
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
+  replica:
+    replicaCount: 2
+    persistence:
+      enabled: false
+
+# SQL Server configuration
+sqlserver:
+  enabled: true
+  image:
+    repository: mcr.microsoft.com/mssql/server
+    tag: 2022-latest
+  auth:
+    saPassword: "YourStrong@Passw0rd"
+  persistence:
+    enabled: true
+    size: 2Gi

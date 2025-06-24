@@ -1,0 +1,19 @@
+{{- if .Values.sqlserver.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "reliability-demo.fullname" . }}-sqlserver
+  labels:
+    {{- include "reliability-demo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: sqlserver
+spec:
+  type: ClusterIP
+  ports:
+    - port: 1433
+      targetPort: sqlserver
+      protocol: TCP
+      name: sqlserver
+  selector:
+    {{- include "reliability-demo.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: sqlserver
+{{- end }}

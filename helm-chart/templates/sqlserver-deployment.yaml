@@ -1,0 +1,53 @@
+{{- if .Values.sqlserver.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "reliability-demo.fullname" . }}-sqlserver
+  labels:
+    {{- include "reliability-demo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: sqlserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "reliability-demo.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: sqlserver
+  template:
+    metadata:
+      labels:
+        {{- include "reliability-demo.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: sqlserver
+    spec:
+      containers:
+        - name: sqlserver
+          image: "{{ .Values.sqlserver.image.repository }}:{{ .Values.sqlserver.image.tag }}"
+          ports:
+            - name: sqlserver
+              containerPort: 1433
+              protocol: TCP
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: SA_PASSWORD
+              value: {{ .Values.sqlserver.auth.saPassword | quote }}
+            - name: MSSQL_PID
+              value: "Developer"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          {{- if .Values.sqlserver.persistence.enabled }}
+          volumeMounts:
+            - name: sqlserver-data
+              mountPath: /var/opt/mssql
+          {{- end }}
+      {{- if .Values.sqlserver.persistence.enabled }}
+      volumes:
+        - name: sqlserver-data
+          persistentVolumeClaim:
+            claimName: {{ include "reliability-demo.fullname" . }}-sqlserver-pvc
+      {{- end }}
+{{- end }}
