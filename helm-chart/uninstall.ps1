@@ -5,7 +5,7 @@
 
 param(
     [string]$ReleaseName = "reliability-demo",
-    [string]$Namespace = "default"
+    [string]$Namespace = "sre3-m1"
 )
 
 Write-Host "Uninstalling Reliability Demo Helm chart..." -ForegroundColor Blue

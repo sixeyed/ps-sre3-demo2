@@ -107,7 +107,8 @@ public class DataController : ControllerBase
         _logger.LogDebug("Deleting customer with ID: {Id} using {DataStore}", id, _dataStoreType);
         try
         {
-            var deleted = await _dataStore.DeleteCustomerAsync(id);
+            // TODO - fix this
+            var deleted = false;//await _dataStore.DeleteCustomerAsync(id);
             
             if (!deleted)
                 return NotFound(new { error = $"Customer with ID {id} not found" });

@@ -10,9 +10,7 @@ data:
       "Logging": {
         "LogLevel": {
           "Default": "Information",
-          "ReliabilityDemo.Controllers": "Debug",
           "ReliabilityDemo.Controllers.HealthController": "Warning",
-          "ReliabilityDemo.Services.SqlServerDataStore": "Trace",
           "Microsoft.AspNetCore": "Warning",
           "Microsoft.EntityFrameworkCore": "Warning",
         },

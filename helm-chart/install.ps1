@@ -5,7 +5,7 @@
 
 param(
     [string]$ReleaseName = "reliability-demo",
-    [string]$Namespace = "sre3"
+    [string]$Namespace = "sre3-m1"
 )
 
 Write-Host "Installing Reliability Demo Helm chart..." -ForegroundColor Blue

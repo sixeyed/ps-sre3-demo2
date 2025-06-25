@@ -31,14 +31,14 @@ public class SqlServerDataStore : IDataStore
         // Simulate connection failures
         if (ShouldFail(_failureConfig.ConnectionFailureRate))
         {
-            _logger.LogDebug("Simulating connection failure for operation: {Operation}", operation);
+            _logger.LogWarning("Simulating connection failure for operation: {Operation}", operation);
             throw new InvalidOperationException("Connection failed - service unavailable");
         }
 
         // Simulate read timeouts
         if (operation == "read" && ShouldFail(_failureConfig.ReadTimeoutRate))
         {
-            _logger.LogDebug("Simulating read timeout for operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.ReadTimeoutMs);
+            _logger.LogWarning("Simulating read timeout for operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.ReadTimeoutMs);
             await Task.Delay(_failureConfig.ReadTimeoutMs);
             throw new TimeoutException("Read operation timed out");
         }
@@ -46,7 +46,7 @@ public class SqlServerDataStore : IDataStore
         // Simulate write timeouts
         if (operation == "write" && ShouldFail(_failureConfig.WriteTimeoutRate))
         {
-            _logger.LogDebug("Simulating write timeout for operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.WriteTimeoutMs);
+            _logger.LogWarning("Simulating write timeout for operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.WriteTimeoutMs);
             await Task.Delay(_failureConfig.WriteTimeoutMs);
             throw new TimeoutException("Write operation timed out");
         }
@@ -54,7 +54,7 @@ public class SqlServerDataStore : IDataStore
         // Simulate slow responses
         if (ShouldFail(_failureConfig.SlowResponseRate))
         {
-            _logger.LogDebug("Simulating slow response for operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.SlowResponseDelayMs);
+            _logger.LogWarning("Simulating slow response for operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.SlowResponseDelayMs);
             await Task.Delay(_failureConfig.SlowResponseDelayMs);
         }
     }
@@ -74,7 +74,7 @@ public class SqlServerDataStore : IDataStore
             _logger.LogTrace("CheckConcurrentClients: current={Current}, max={Max}", _concurrentClients, _config.MaxConcurrentClients);
             if (_concurrentClients >= _config.MaxConcurrentClients)
             {
-                _logger.LogTrace("Too many concurrent clients, throwing exception: current={Current}, max={Max}", _concurrentClients, _config.MaxConcurrentClients);
+                _logger.LogError("Too many concurrent clients, throttling: current={Current}, max={Max}", _concurrentClients, _config.MaxConcurrentClients);
                 throw new InvalidOperationException($"Too many concurrent clients. Maximum allowed: {_config.MaxConcurrentClients}, current: {_concurrentClients}");
             }
             _concurrentClients++;
