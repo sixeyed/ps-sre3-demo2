@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
-using ReliabilityDemo.Models;
+using ReliabilityDemo.DataStore.Models;
+using ReliabilityDemo.DataStore.Services;
 using StackExchange.Redis;
 using System.Text.Json;
 

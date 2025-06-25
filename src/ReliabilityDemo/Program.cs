@@ -1,5 +1,6 @@
-using Microsoft.EntityFrameworkCore;
-using ReliabilityDemo.Data;
+using ReliabilityDemo.DataStore;
+using ReliabilityDemo.DataStore.Models;
+using ReliabilityDemo.DataStore.Services;
 using ReliabilityDemo.Models;
 using ReliabilityDemo.Services;
 using StackExchange.Redis;
@@ -7,25 +8,18 @@ using StackExchange.Redis;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure from appsettings
-builder.Services.Configure<FailureConfig>(
-    builder.Configuration.GetSection("FailureConfig"));
 builder.Services.Configure<DataStoreConfig>(
     builder.Configuration.GetSection("DataStore"));
 builder.Services.Configure<RedisDataStoreConfig>(
     builder.Configuration.GetSection("RedisDataStore"));
-builder.Services.Configure<SqlServerDataStoreConfig>(
-    builder.Configuration.GetSection("SqlServerDataStore"));
 
 // Configure data store based on provider
 var dataStoreProvider = builder.Configuration.GetSection("DataStore")["Provider"] ?? "Redis";
 
 if (dataStoreProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
 {
-    // Add SQL Server
-    var sqlConnectionString = builder.Configuration.GetConnectionString("SqlServer") ?? "Server=(localdb)\\mssqllocaldb;Database=ReliabilityDemo;Trusted_Connection=true;";
-    builder.Services.AddDbContext<ReliabilityDemoContext>(options =>
-        options.UseSqlServer(sqlConnectionString));
-    builder.Services.AddScoped<IDataStore, SqlServerDataStore>();
+    // Add SQL Server via shared assembly
+    builder.Services.AddSqlServerDataStore(builder.Configuration);
 }
 else
 {
@@ -48,13 +42,7 @@ var app = builder.Build();
 // Auto-migrate SQL Server database if configured
 if (dataStoreProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
 {
-    var sqlServerConfig = builder.Configuration.GetSection("SqlServerDataStore").Get<SqlServerDataStoreConfig>() ?? new SqlServerDataStoreConfig();
-    if (sqlServerConfig.AutoMigrate)
-    {
-        using var scope = app.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReliabilityDemoContext>();
-        context.Database.EnsureCreated();
-    }
+    await app.Services.EnsureDatabaseCreatedAsync(builder.Configuration);
 }
 
 // Configure the HTTP request pipeline

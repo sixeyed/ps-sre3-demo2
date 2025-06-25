@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using ReliabilityDemo.Models;
+using ReliabilityDemo.DataStore.Models;
 
 namespace ReliabilityDemo.Controllers;
 

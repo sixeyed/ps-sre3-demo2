@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using ReliabilityDemo.Data;
-using ReliabilityDemo.Models;
+using ReliabilityDemo.DataStore.Data;
+using ReliabilityDemo.DataStore.Models;
 
-namespace ReliabilityDemo.Services;
+namespace ReliabilityDemo.DataStore.Services;
 
 public class SqlServerDataStore : IDataStore
 {

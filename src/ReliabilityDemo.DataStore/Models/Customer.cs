@@ -1,10 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace ReliabilityDemo.Models;
+namespace ReliabilityDemo.DataStore.Models;
 
 public class Customer
 {
-    [Key]
     public int Id { get; set; }
     
     [Required]
@@ -13,7 +12,7 @@ public class Customer
     
     [Required]
     [EmailAddress]
-    [StringLength(255)]
+    [StringLength(100)]
     public string Email { get; set; } = string.Empty;
     
     [Phone]
@@ -23,6 +22,6 @@ public class Customer
     [StringLength(500)]
     public string? Address { get; set; }
     
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 }

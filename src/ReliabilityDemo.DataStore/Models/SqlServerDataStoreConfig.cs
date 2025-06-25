@@ -1,4 +1,4 @@
-namespace ReliabilityDemo.Models;
+namespace ReliabilityDemo.DataStore.Models;
 
 public class SqlServerDataStoreConfig
 {

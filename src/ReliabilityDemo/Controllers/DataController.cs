@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using ReliabilityDemo.DataStore.Models;
+using ReliabilityDemo.DataStore.Services;
 using ReliabilityDemo.Models;
-using ReliabilityDemo.Services;
 
 namespace ReliabilityDemo.Controllers;
 
@@ -107,8 +108,7 @@ public class DataController : ControllerBase
         _logger.LogDebug("Deleting customer with ID: {Id} using {DataStore}", id, _dataStoreType);
         try
         {
-            // TODO - fix this
-            var deleted = false;//await _dataStore.DeleteCustomerAsync(id);
+            var deleted = await _dataStore.DeleteCustomerAsync(id);
             
             if (!deleted)
                 return NotFound(new { error = $"Customer with ID {id} not found" });
