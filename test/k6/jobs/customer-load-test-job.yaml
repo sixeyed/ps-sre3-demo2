@@ -18,11 +18,11 @@ spec:
           value: "json=/tmp/results.json"
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "100m"
+            memory: "1G"
+            cpu: "1"
           limits:
-            memory: "256Mi"
-            cpu: "200m"
+            memory: "2G"
+            cpu: "2"
       volumes:
       - name: k6-script
         configMap:

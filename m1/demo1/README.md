@@ -45,6 +45,8 @@ Executes GET with concurrency 10 for 30m:
 kubectl apply -f test/k6/jobs/customer-soak-test-job.yaml
 ```
 
+Check web app - loads all customers in homepage
+
 ## Load Test
 
 ```

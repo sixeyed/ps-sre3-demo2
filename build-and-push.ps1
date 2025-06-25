@@ -11,7 +11,7 @@ $ImageName = "sixeyed/reliability-demo"
 $FullImage = "${ImageName}:${Tag}"
 
 Write-Host "Building Docker image: $FullImage" -ForegroundColor Blue
-$buildResult = docker build -t $FullImage src/ReliabilityDemo/
+$buildResult = docker build -t $FullImage -f src/ReliabilityDemo/Dockerfile src/
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Build successful! Pushing to Docker Hub..." -ForegroundColor Green

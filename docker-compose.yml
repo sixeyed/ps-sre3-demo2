@@ -12,8 +12,8 @@ services:
   reliability-demo:
     image: sixeyed/reliability-demo:m1-01
     build:
-      context: ./src/ReliabilityDemo
-      dockerfile: Dockerfile
+      context: ./src
+      dockerfile: ReliabilityDemo/Dockerfile
     ports:
       - "8080:8080"
     environment:

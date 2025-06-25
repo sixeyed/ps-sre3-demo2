@@ -23,8 +23,8 @@ data:
           executor: 'ramping-vus',
           stages: [
             { duration: '30s', target: 5 },   // Ramp up
-            { duration: '2m', target: 15 },   // Steady load
-            { duration: '30s', target: 25 },  // Peak load
+            { duration: '1m', target: 15 },   // Steady load
+            { duration: '30s', target: 35 },  // Peak load
             { duration: '1m', target: 25 },   // Sustain peak
             { duration: '30s', target: 5 },   // Ramp down
           ],
@@ -126,7 +126,7 @@ data:
           stages: [
             { duration: '30s', target: 5 },   // Normal load
             { duration: '10s', target: 50 },  // Spike to 50 users quickly
-            { duration: '30s', target: 50 },  // Sustain spike
+            { duration: '1m', target: 50 },  // Sustain spike
             { duration: '10s', target: 5 },   // Quick ramp down
             { duration: '30s', target: 5 },   // Recovery period
           ],
@@ -184,8 +184,8 @@ data:
       scenarios: {
         soak_test: {
           executor: 'constant-vus',
-          vus: 10, // Modest load - 10 concurrent users
-          duration: '30m', // Run for 30 minutes
+          vus: 30, 
+          duration: '5m', 
           gracefulStop: '30s'
         },
       },
@@ -226,6 +226,6 @@ data:
         },
       });
       
-      // Random delay between 5-15 seconds to simulate realistic user behavior
-      sleep(randomIntBetween(5, 15));
+      // Random delay between 0-2 seconds to simulate realistic user behavior
+      sleep(randomIntBetween(0, 2));
     }
