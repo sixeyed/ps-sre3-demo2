@@ -1,5 +1,5 @@
 # Reliability Demo application configuration
-replicaCount: 3
+replicaCount: 1
 
 image:
   repository: sixeyed/reliability-demo
@@ -22,11 +22,12 @@ resources:
 config:
   # Data store provider: Redis or SqlServer
   dataStore:
-    provider: "Redis"
+    provider: "SqlServer"
   failureConfig:
+    enabled: true
     connectionFailureRate: 0.1
-    readTimeoutRate: 0.05
-    writeTimeoutRate: 0.05
+    readTimeoutRate: 0.5
+    writeTimeoutRate: 0.3
     slowResponseRate: 0.1
     readTimeoutMs: 1000
     writeTimeoutMs: 1000

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using ReliabilityDemo.Models;
-using ReliabilityDemo.Services;
 
 namespace ReliabilityDemo.Controllers;
 
@@ -8,12 +8,12 @@ namespace ReliabilityDemo.Controllers;
 [Route("api/[controller]")]
 public class ConfigController : ControllerBase
 {
-    private readonly FailureSimulator _failureSimulator;
+    private readonly IOptionsSnapshot<FailureConfig> _failureConfig;
     private readonly ILogger<ConfigController> _logger;
 
-    public ConfigController(FailureSimulator failureSimulator, ILogger<ConfigController> logger)
+    public ConfigController(IOptionsSnapshot<FailureConfig> failureConfig, ILogger<ConfigController> logger)
     {
-        _failureSimulator = failureSimulator;
+        _failureConfig = failureConfig;
         _logger = logger;
     }
 
@@ -21,22 +21,20 @@ public class ConfigController : ControllerBase
     public IActionResult GetConfig()
     {
         _logger.LogDebug("Getting current failure configuration");
-        return Ok(_failureSimulator.Config);
+        return Ok(_failureConfig.Value);
     }
 
     [HttpPost]
     public IActionResult UpdateConfig([FromBody] FailureConfig config)
     {
         _logger.LogDebug("Updating failure configuration: {@Config}", config);
-        _failureSimulator.Config = config;
-        return Ok(new { message = "Configuration updated successfully" });
+        return BadRequest(new { message = "Configuration updates not supported - modify appsettings.json or Helm values" });
     }
 
     [HttpPost("reset")]
     public IActionResult ResetConfig()
     {
         _logger.LogDebug("Resetting failure configuration to defaults");
-        _failureSimulator.Config = new FailureConfig();
-        return Ok(new { message = "Configuration reset to defaults" });
+        return BadRequest(new { message = "Configuration reset not supported - modify appsettings.json or Helm values" });
     }
 }

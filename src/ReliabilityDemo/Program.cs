@@ -42,7 +42,6 @@ else
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSingleton<FailureSimulator>();
 
 var app = builder.Build();
 

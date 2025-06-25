@@ -9,18 +9,7 @@ services:
       - redis_data:/data
     command: redis-server --appendonly yes
 
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    ports:
-      - "1433:1433"
-    environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=YourStrong@Passw0rd
-      - MSSQL_PID=Developer
-    volumes:
-      - sqlserver_data:/var/opt/mssql
-
-  reliability-demo-redis:
+  reliability-demo:
     image: sixeyed/reliability-demo:m1-01
     build:
       context: ./src/ReliabilityDemo
@@ -32,20 +21,6 @@ services:
       - ConnectionStrings__Redis=redis:6379
     depends_on:
       - redis
-
-  reliability-demo-sqlserver:
-    image: sixeyed/reliability-demo:m1-01
-    build:
-      context: ./src/ReliabilityDemo
-      dockerfile: Dockerfile
-    ports:
-      - "8081:8080"
-    environment:
-      - DataStore__Provider=SqlServer
-      - ConnectionStrings__SqlServer=Server=sqlserver;Database=ReliabilityDemo;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true;
-      - SqlServerDataStore__AutoMigrate=true
-    depends_on:
-      - sqlserver
 
 volumes:
   redis_data:

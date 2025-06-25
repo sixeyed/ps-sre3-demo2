@@ -374,22 +374,22 @@
             <h2>Add New Customer</h2>
             <div class="form-group">
                 <label for="customerName">Name *</label>
-                <input type="text" id="customerName" placeholder="Enter customer name" value="John Doe">
+                <input type="text" id="customerName" placeholder="Enter customer name">
             </div>
             
             <div class="form-group">
                 <label for="customerEmail">Email *</label>
-                <input type="email" id="customerEmail" placeholder="Enter email address" value="john@example.com">
+                <input type="email" id="customerEmail" placeholder="Enter email address">
             </div>
             
             <div class="form-group">
                 <label for="customerPhone">Phone</label>
-                <input type="tel" id="customerPhone" placeholder="Enter phone number" value="+1-555-0123">
+                <input type="tel" id="customerPhone" placeholder="Enter phone number">
             </div>
             
             <div class="form-group">
                 <label for="customerAddress">Address</label>
-                <textarea id="customerAddress" rows="3" placeholder="Enter customer address">123 Main St, Anytown, USA</textarea>
+                <textarea id="customerAddress" rows="3" placeholder="Enter customer address"></textarea>
             </div>
             
             <button class="btn success" onclick="createCustomer()">
@@ -436,7 +436,34 @@
             initializeSliders();
             loadFailureConfig();
             refreshCustomerTable();
+            generateRandomCustomerData();
         });
+
+        function generateRandomCustomerData() {
+            const firstNames = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Lisa', 'Chris', 'Emma', 'Alex', 'Maria'];
+            const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
+            const domains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'company.com'];
+            const streets = ['Main St', 'Oak Ave', 'Park Blvd', 'First St', 'Second Ave', 'Elm St', 'Maple Dr', 'Cedar Ln'];
+            const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego'];
+            const states = ['NY', 'CA', 'IL', 'TX', 'AZ', 'PA', 'FL', 'WA'];
+            
+            const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+            const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+            const domain = domains[Math.floor(Math.random() * domains.length)];
+            const street = streets[Math.floor(Math.random() * streets.length)];
+            const city = cities[Math.floor(Math.random() * cities.length)];
+            const state = states[Math.floor(Math.random() * states.length)];
+            
+            const name = `${firstName} ${lastName}`;
+            const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${domain}`;
+            const phone = `+1-${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 900 + 100)}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+            const address = `${Math.floor(Math.random() * 9999 + 1)} ${street}, ${city}, ${state} ${String(Math.floor(Math.random() * 90000 + 10000))}`;
+            
+            document.getElementById('customerName').value = name;
+            document.getElementById('customerEmail').value = email;
+            document.getElementById('customerPhone').value = phone;
+            document.getElementById('customerAddress').value = address;
+        }
 
         function toggleDemoPanel() {
             const panel = document.getElementById('demoPanel');
@@ -564,11 +591,8 @@
                     showAlert('createStatus', `Customer created successfully with ID: ${createdCustomer.id}`, 'success');
                     refreshCustomerTable();
                     
-                    // Clear the form
-                    document.getElementById('customerName').value = '';
-                    document.getElementById('customerEmail').value = '';
-                    document.getElementById('customerPhone').value = '';
-                    document.getElementById('customerAddress').value = '';
+                    // Generate new random data for next customer
+                    generateRandomCustomerData();
                 } else {
                     const error = await response.json();
                     throw new Error(error.error || 'Failed to create customer');

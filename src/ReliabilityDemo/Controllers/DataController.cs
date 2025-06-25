@@ -8,24 +8,23 @@ namespace ReliabilityDemo.Controllers;
 [Route("api/customers")]
 public class DataController : ControllerBase
 {
-    private readonly FailureSimulator _failureSimulator;
     private readonly IDataStore _dataStore;
     private readonly ILogger<DataController> _logger;
+    private readonly string _dataStoreType;
 
-    public DataController(FailureSimulator failureSimulator, IDataStore dataStore, ILogger<DataController> logger)
+    public DataController(IDataStore dataStore, ILogger<DataController> logger)
     {
-        _failureSimulator = failureSimulator;
         _dataStore = dataStore;
         _logger = logger;
+        _dataStoreType = dataStore.GetType().Name;
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetCustomer(int id)
     {
-        _logger.LogDebug("Getting customer with ID: {Id}", id);
+        _logger.LogDebug("Getting customer with ID: {Id} using {DataStore}", id, _dataStoreType);
         try
         {
-            await _failureSimulator.SimulateFailures("read");
             var customer = await _dataStore.GetCustomerAsync(id);
             
             if (customer == null)
@@ -46,11 +45,9 @@ public class DataController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateCustomer([FromBody] CreateCustomerRequest request)
     {
-        _logger.LogDebug("Creating customer: {Name}, {Email}", request.Name, request.Email);
+        _logger.LogDebug("Creating customer: {Name}, {Email} using {DataStore}", request.Name, request.Email, _dataStoreType);
         try
         {
-            await _failureSimulator.SimulateFailures("write");
-            
             var customer = new Customer
             {
                 Name = request.Name,
@@ -75,11 +72,9 @@ public class DataController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateCustomer(int id, [FromBody] UpdateCustomerRequest request)
     {
-        _logger.LogDebug("Updating customer with ID: {Id}", id);
+        _logger.LogDebug("Updating customer with ID: {Id} using {DataStore}", id, _dataStoreType);
         try
         {
-            await _failureSimulator.SimulateFailures("write");
-            
             var customer = new Customer
             {
                 Id = id,
@@ -109,10 +104,9 @@ public class DataController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCustomer(int id)
     {
-        _logger.LogDebug("Deleting customer with ID: {Id}", id);
+        _logger.LogDebug("Deleting customer with ID: {Id} using {DataStore}", id, _dataStoreType);
         try
         {
-            await _failureSimulator.SimulateFailures("write");
             var deleted = await _dataStore.DeleteCustomerAsync(id);
             
             if (!deleted)
@@ -133,10 +127,9 @@ public class DataController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAllCustomers()
     {
-        _logger.LogDebug("Getting all customers");
+        _logger.LogDebug("Getting all customers using {DataStore}", _dataStoreType);
         try
         {
-            await _failureSimulator.SimulateFailures("read");
             var customers = await _dataStore.GetAllCustomersAsync();
             return Ok(customers);
         }

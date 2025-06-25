@@ -11,6 +11,8 @@ spec:
       {{- include "reliability-demo.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        configmap/checksum: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
       labels:
         {{- include "reliability-demo.selectorLabels" . | nindent 8 }}
     spec:

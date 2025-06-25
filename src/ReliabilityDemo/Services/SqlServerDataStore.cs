@@ -9,24 +9,76 @@ public class SqlServerDataStore : IDataStore
 {
     private readonly ReliabilityDemoContext _context;
     private readonly SqlServerDataStoreConfig _config;
+    private readonly FailureConfig _failureConfig;
+    private readonly Random _random = new();
+    private readonly ILogger<SqlServerDataStore> _logger;
     private static int _concurrentClients = 0;
     private static readonly object _lock = new object();
     
-    public SqlServerDataStore(ReliabilityDemoContext context, IOptions<SqlServerDataStoreConfig> config)
+    public SqlServerDataStore(ReliabilityDemoContext context, IOptions<SqlServerDataStoreConfig> config, IOptions<FailureConfig> failureConfig, ILogger<SqlServerDataStore> logger)
     {
         _context = context;
         _config = config.Value;
+        _failureConfig = failureConfig.Value;
+        _logger = logger;
+    }
+    
+    private async Task SimulateFailure(string operation)
+    {
+        if (!_failureConfig.Enabled)
+            return;
+
+        // Simulate connection failures
+        if (ShouldFail(_failureConfig.ConnectionFailureRate))
+        {
+            _logger.LogDebug("Simulating connection failure for operation: {Operation}", operation);
+            throw new InvalidOperationException("Connection failed - service unavailable");
+        }
+
+        // Simulate read timeouts
+        if (operation == "read" && ShouldFail(_failureConfig.ReadTimeoutRate))
+        {
+            _logger.LogDebug("Simulating read timeout for operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.ReadTimeoutMs);
+            await Task.Delay(_failureConfig.ReadTimeoutMs);
+            throw new TimeoutException("Read operation timed out");
+        }
+
+        // Simulate write timeouts
+        if (operation == "write" && ShouldFail(_failureConfig.WriteTimeoutRate))
+        {
+            _logger.LogDebug("Simulating write timeout for operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.WriteTimeoutMs);
+            await Task.Delay(_failureConfig.WriteTimeoutMs);
+            throw new TimeoutException("Write operation timed out");
+        }
+
+        // Simulate slow responses
+        if (ShouldFail(_failureConfig.SlowResponseRate))
+        {
+            _logger.LogDebug("Simulating slow response for operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.SlowResponseDelayMs);
+            await Task.Delay(_failureConfig.SlowResponseDelayMs);
+        }
+    }
+
+    private bool ShouldFail(double rate)
+    {
+        var randomValue = _random.NextDouble();
+        var shouldFail = randomValue < rate;
+        _logger.LogTrace("ShouldFail check: rate={Rate}, random={Random}, result={Result}", rate, randomValue, shouldFail);
+        return shouldFail;
     }
     
     private void CheckConcurrentClients()
     {
         lock (_lock)
         {
+            _logger.LogTrace("CheckConcurrentClients: current={Current}, max={Max}", _concurrentClients, _config.MaxConcurrentClients);
             if (_concurrentClients >= _config.MaxConcurrentClients)
             {
+                _logger.LogTrace("Too many concurrent clients, throwing exception: current={Current}, max={Max}", _concurrentClients, _config.MaxConcurrentClients);
                 throw new InvalidOperationException($"Too many concurrent clients. Maximum allowed: {_config.MaxConcurrentClients}, current: {_concurrentClients}");
             }
             _concurrentClients++;
+            _logger.LogTrace("Incremented concurrent clients: new count={Count}", _concurrentClients);
         }
     }
     
@@ -40,6 +92,7 @@ public class SqlServerDataStore : IDataStore
     
     public async Task<Customer?> GetCustomerAsync(int id)
     {
+        await SimulateFailure("read");
         CheckConcurrentClients();
         try
         {
@@ -54,6 +107,7 @@ public class SqlServerDataStore : IDataStore
     
     public async Task<Customer> CreateCustomerAsync(Customer customer)
     {
+        await SimulateFailure("write");
         CheckConcurrentClients();
         try
         {
@@ -75,6 +129,7 @@ public class SqlServerDataStore : IDataStore
     
     public async Task<Customer> UpdateCustomerAsync(Customer customer)
     {
+        await SimulateFailure("write");
         CheckConcurrentClients();
         try
         {
@@ -104,6 +159,7 @@ public class SqlServerDataStore : IDataStore
     
     public async Task<bool> DeleteCustomerAsync(int id)
     {
+        await SimulateFailure("write");
         CheckConcurrentClients();
         try
         {
@@ -128,6 +184,7 @@ public class SqlServerDataStore : IDataStore
     
     public async Task<IEnumerable<Customer>> GetAllCustomersAsync()
     {
+        await SimulateFailure("read");
         CheckConcurrentClients();
         try
         {

@@ -10,9 +10,11 @@ data:
       "Logging": {
         "LogLevel": {
           "Default": "Information",
-          "ReliabilityDemo.Services.FailureSimulator": "Debug",
           "ReliabilityDemo.Controllers": "Debug",
-          "Microsoft.AspNetCore": "Warning"
+          "ReliabilityDemo.Controllers.HealthController": "Warning",
+          "ReliabilityDemo.Services.SqlServerDataStore": "Trace",
+          "Microsoft.AspNetCore": "Warning",
+          "Microsoft.EntityFrameworkCore": "Warning",
         },
         "Console": {
           "IncludeScopes": false,
@@ -20,6 +22,7 @@ data:
         }
       },
       "FailureConfig": {
+        "Enabled": {{ .Values.config.failureConfig.enabled }},
         "ConnectionFailureRate": {{ .Values.config.failureConfig.connectionFailureRate | float64 }},
         "ReadTimeoutRate": {{ .Values.config.failureConfig.readTimeoutRate | float64 }},
         "WriteTimeoutRate": {{ .Values.config.failureConfig.writeTimeoutRate | float64 }},
@@ -30,7 +33,7 @@ data:
       },
       "AllowedHosts": "*",
       "ConnectionStrings": {
-        "Redis": "{{ .Release.Name }}-redis-master:6379",
+        "Redis": "{{ .Release.Name }}-redis-master:6379,abortConnect=false",
         "SqlServer": "{{ include "reliability-demo.sqlServerConnectionString" . }}"
       },
       "DataStore": {
