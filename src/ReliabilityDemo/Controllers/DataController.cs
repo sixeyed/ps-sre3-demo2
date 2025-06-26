@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using ReliabilityDemo.DataStore.Models;
 using ReliabilityDemo.DataStore.Services;
 using ReliabilityDemo.Models;
+using ReliabilityDemo.Services;
+using ReliabilityDemo.Messaging;
 
 namespace ReliabilityDemo.Controllers;
 
@@ -10,12 +12,16 @@ namespace ReliabilityDemo.Controllers;
 public class DataController : ControllerBase
 {
     private readonly IDataStore _dataStore;
+    private readonly IDistributedCache _cache;
+    private readonly ICustomerOperationService _customerOperationService;
     private readonly ILogger<DataController> _logger;
     private readonly string _dataStoreType;
 
-    public DataController(IDataStore dataStore, ILogger<DataController> logger)
+    public DataController(IDataStore dataStore, IDistributedCache cache, ICustomerOperationService customerOperationService, ILogger<DataController> logger)
     {
         _dataStore = dataStore;
+        _cache = cache;
+        _customerOperationService = customerOperationService;
         _logger = logger;
         _dataStoreType = dataStore.GetType().Name;
     }
@@ -26,10 +32,59 @@ public class DataController : ControllerBase
         _logger.LogDebug("Getting customer with ID: {Id} using {DataStore}", id, _dataStoreType);
         try
         {
+            // Try cache first
+            var cachedCustomer = await _cache.GetCustomerAsync(id);
+            if (cachedCustomer != null)
+            {
+                _logger.LogDebug("Customer {Id} found in cache", id);
+                return Ok(cachedCustomer);
+            }
+            
+            // Cache miss - get from data store
             var customer = await _dataStore.GetCustomerAsync(id);
             
             if (customer == null)
                 return NotFound(new { error = $"Customer with ID {id} not found" });
+            
+            // Cache the result
+            await _cache.SetCustomerAsync(customer);
+            _logger.LogDebug("Customer {Id} retrieved from {DataStore} and cached", id, _dataStoreType);
+                
+            return Ok(customer);
+        }
+        catch (TimeoutException ex)
+        {
+            return StatusCode(408, new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("email/{email}")]
+    public async Task<IActionResult> GetCustomerByEmail(string email)
+    {
+        _logger.LogDebug("Getting customer with email: {Email} using {DataStore}", email, _dataStoreType);
+        try
+        {
+            // Try cache first
+            var cachedCustomer = await _cache.GetCustomerByEmailAsync(email);
+            if (cachedCustomer != null)
+            {
+                _logger.LogDebug("Customer with email {Email} found in cache", email);
+                return Ok(cachedCustomer);
+            }
+            
+            // Cache miss - get from data store
+            var customer = await _dataStore.GetCustomerByEmailAsync(email);
+            
+            if (customer == null)
+                return NotFound(new { error = $"Customer with email {email} not found" });
+            
+            // Cache the result
+            await _cache.SetCustomerAsync(customer);
+            _logger.LogDebug("Customer with email {Email} retrieved from {DataStore} and cached", email, _dataStoreType);
                 
             return Ok(customer);
         }
@@ -46,86 +101,19 @@ public class DataController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateCustomer([FromBody] CreateCustomerRequest request)
     {
-        _logger.LogDebug("Creating customer: {Name}, {Email} using {DataStore}", request.Name, request.Email, _dataStoreType);
-        try
-        {
-            var customer = new Customer
-            {
-                Name = request.Name,
-                Email = request.Email,
-                Phone = request.Phone,
-                Address = request.Address
-            };
-            
-            var createdCustomer = await _dataStore.CreateCustomerAsync(customer);
-            return CreatedAtAction(nameof(GetCustomer), new { id = createdCustomer.Id }, createdCustomer);
-        }
-        catch (TimeoutException ex)
-        {
-            return StatusCode(408, new { error = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return StatusCode(503, new { error = ex.Message });
-        }
+        return await _customerOperationService.CreateCustomerAsync(request, HttpContext.TraceIdentifier);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateCustomer(int id, [FromBody] UpdateCustomerRequest request)
     {
-        _logger.LogDebug("Updating customer with ID: {Id} using {DataStore}", id, _dataStoreType);
-        try
-        {
-            var customer = new Customer
-            {
-                Id = id,
-                Name = request.Name,
-                Email = request.Email,
-                Phone = request.Phone,
-                Address = request.Address
-            };
-            
-            var updatedCustomer = await _dataStore.UpdateCustomerAsync(customer);
-            return Ok(updatedCustomer);
-        }
-        catch (TimeoutException ex)
-        {
-            return StatusCode(408, new { error = ex.Message });
-        }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("not found"))
-        {
-            return NotFound(new { error = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return StatusCode(503, new { error = ex.Message });
-        }
+        return await _customerOperationService.UpdateCustomerAsync(id, request, HttpContext.TraceIdentifier);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCustomer(int id)
     {
-        _logger.LogDebug("Deleting customer with ID: {Id} using {DataStore}", id, _dataStoreType);
-        try
-        {
-            var deleted = await _dataStore.DeleteCustomerAsync(id);
-
-            if (!deleted)
-            {
-                _logger.LogError("Delete failed  with ID: {Id} using {DataStore}", id, _dataStoreType);
-                return NotFound(new { error = $"Customer with ID {id} not found" });
-            }
-                
-            return NoContent();
-        }
-        catch (TimeoutException ex)
-        {
-            return StatusCode(408, new { error = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return StatusCode(503, new { error = ex.Message });
-        }
+        return await _customerOperationService.DeleteCustomerAsync(id, HttpContext.TraceIdentifier);
     }
 
     [HttpGet]
@@ -134,7 +122,21 @@ public class DataController : ControllerBase
         _logger.LogDebug("Getting all customers using {DataStore}", _dataStoreType);
         try
         {
+            // Try cache first
+            var cachedCustomers = await _cache.GetAllCustomersAsync();
+            if (cachedCustomers != null)
+            {
+                _logger.LogDebug("All customers found in cache");
+                return Ok(cachedCustomers);
+            }
+            
+            // Cache miss - get from data store
             var customers = await _dataStore.GetAllCustomersAsync();
+            
+            // Cache the result
+            await _cache.SetAllCustomersAsync(customers);
+            _logger.LogDebug("All customers retrieved from {DataStore} and cached", _dataStoreType);
+            
             return Ok(customers);
         }
         catch (TimeoutException ex)

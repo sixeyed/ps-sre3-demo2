@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   redis:
     image: redis:7-alpine
@@ -21,6 +19,29 @@ services:
       - ConnectionStrings__Redis=redis:6379
     depends_on:
       - redis
+
+  customer-worker:
+    image: sixeyed/reliability-demo-worker:m1-01
+    build:
+      context: ./src
+      dockerfile: ReliabilityDemo.Worker/Dockerfile
+    environment:
+      - DataStore__Provider=SqlServer
+      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__SqlServer=Server=sqlserver;Database=ReliabilityDemo;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true;
+    depends_on:
+      - redis
+      - sqlserver
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
 
 volumes:
   redis_data:

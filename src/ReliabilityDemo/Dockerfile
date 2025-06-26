@@ -8,6 +8,7 @@ WORKDIR /src
 # Copy project files and restore dependencies
 COPY ["ReliabilityDemo/ReliabilityDemo.csproj", "ReliabilityDemo/"]
 COPY ["ReliabilityDemo.DataStore/ReliabilityDemo.DataStore.csproj", "ReliabilityDemo.DataStore/"]
+COPY ["ReliabilityDemo.Messaging/ReliabilityDemo.Messaging.csproj", "ReliabilityDemo.Messaging/"]
 RUN dotnet restore "ReliabilityDemo/ReliabilityDemo.csproj"
 # Copy source code
 COPY . .

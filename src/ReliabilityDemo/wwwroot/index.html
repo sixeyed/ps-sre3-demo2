@@ -424,10 +424,18 @@
                 <label for="lookupId">Customer ID</label>
                 <input type="number" id="lookupId" placeholder="Enter customer ID" value="1" min="1">
             </div>
+            <div class="form-group">
+                <label for="lookupEmail">Customer Email</label>
+                <input type="email" id="lookupEmail" placeholder="Enter customer email">
+            </div>
             
             <button class="btn" onclick="lookupCustomer()">
                 <span id="lookupLoading" class="loading" style="display: none;"></span>
-                Find Customer
+                Find by ID
+            </button>
+            <button class="btn" onclick="lookupCustomerByEmail()">
+                <span id="lookupEmailLoading" class="loading" style="display: none;"></span>
+                Find by Email
             </button>
             <button class="btn" onclick="viewAllCustomers()">
                 <span id="viewAllLoading" class="loading" style="display: none;"></span>
@@ -472,8 +480,12 @@
             const city = cities[Math.floor(Math.random() * cities.length)];
             const state = states[Math.floor(Math.random() * states.length)];
             
+            // Generate a short UUID fragment to ensure email uniqueness
+            const uuid = crypto.randomUUID();
+            const uuidFragment = uuid.substring(0, 8); // Use first 8 characters
+            
             const name = `${firstName} ${lastName}`;
-            const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${domain}`;
+            const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${uuidFragment}@${domain}`;
             const phone = `+1-${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 900 + 100)}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
             const address = `${Math.floor(Math.random() * 9999 + 1)} ${street}, ${city}, ${state} ${String(Math.floor(Math.random() * 90000 + 10000))}`;
             
@@ -702,6 +714,62 @@
                 document.getElementById('customerDetails').innerHTML = '';
             } finally {
                 showLoading('lookupLoading', false);
+            }
+        }
+
+        async function lookupCustomerByEmail() {
+            const lookupEmail = document.getElementById('lookupEmail').value.trim();
+
+            if (!lookupEmail) {
+                showAlert('lookupStatus', 'Please enter a Customer Email to lookup', 'warning');
+                return;
+            }
+
+            showLoading('lookupEmailLoading', true);
+            document.getElementById('customerDetails').innerHTML = '';
+
+            try {
+                const response = await fetch(`/api/customers/email/${encodeURIComponent(lookupEmail)}`);
+
+                if (response.ok) {
+                    const customer = await response.json();
+                    const detailsHtml = `
+                        <div class="alert success">
+                            <h4>Customer Found (Email: ${customer.email})</h4>
+                            <table class="data-table">
+                                <tr><td><strong>ID</strong></td><td>${customer.id}</td></tr>
+                                <tr><td><strong>Name</strong></td><td>${customer.name}</td></tr>
+                                <tr><td><strong>Email</strong></td><td>${customer.email}</td></tr>
+                                <tr><td><strong>Phone</strong></td><td>${customer.phone || 'Not provided'}</td></tr>
+                                <tr><td><strong>Address</strong></td><td>${customer.address || 'Not provided'}</td></tr>
+                                <tr><td><strong>Created</strong></td><td>${new Date(customer.createdAt).toLocaleString()}</td></tr>
+                                <tr><td><strong>Updated</strong></td><td>${customer.updatedAt ? new Date(customer.updatedAt).toLocaleString() : 'Never'}</td></tr>
+                            </table>
+                            <div style="margin-top: 15px;">
+                                <button class="btn danger" onclick="deleteCustomer(${customer.id})">Delete Customer</button>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('customerDetails').innerHTML = detailsHtml;
+                    showAlert('lookupStatus', `Customer with email ${lookupEmail} found`, 'success');
+                } else if (response.status === 404) {
+                    showAlert('lookupStatus', `Customer with email ${lookupEmail} not found`, 'warning');
+                    document.getElementById('customerDetails').innerHTML = '';
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to lookup customer by email');
+                }
+            } catch (error) {
+                if (error.message.includes('timeout')) {
+                    showAlert('lookupStatus', 'Request timed out - please try again', 'error');
+                } else if (error.message.includes('service unavailable')) {
+                    showAlert('lookupStatus', 'Service temporarily unavailable - please try again', 'error');
+                } else {
+                    showAlert('lookupStatus', `Error: ${error.message}`, 'error');
+                }
+                document.getElementById('customerDetails').innerHTML = '';
+            } finally {
+                showLoading('lookupEmailLoading', false);
             }
         }
 

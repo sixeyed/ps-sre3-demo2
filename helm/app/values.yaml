@@ -47,10 +47,10 @@ config:
     maxConcurrentClients: 2
     autoMigrate: true
   distributedCache:
-    enabled: true
+    enabled: false
     expirationSeconds: 300
   customerOperation:
-    pattern: "Async"  # "Direct" or "Async"
+    pattern: "Direct"  # "Direct" or "Async"
   messaging:
     createCustomerQueueName: "customer_create_queue"
     updateCustomerQueueName: "customer_update_queue"

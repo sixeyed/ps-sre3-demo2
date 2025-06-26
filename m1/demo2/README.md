@@ -1,25 +1,26 @@
 
 ## Setup
 
-Spin up a multi-node cluster:
+Run demo 1
+
+## Fix read issues
+
+Upgrade app deployment to use distributed cache:
 
 ```
-k3d cluster create sre3-m1 --api-port 6550 --servers 1 --agents 3 --port 8080:8080@loadbalancer --port 3000:3000@loadbalancer
+helm upgrade -n sre3-m1 reliability-demo helm/app `
+ --set config.distributedCache.enabled=true 
 ```
 
-Deploy LGTM stack:
+## Fix write issues
+
+Upgrade with distributed cache and async messaging:
 
 ```
-helm/lgtm/install.ps1
+helm upgrade -n sre3-m1 reliability-demo helm/app `
+ --set config.distributedCache.enabled=true `
+ --set config.customerOperation.pattern=Async 
 ```
-
-Deploy app:
-
-```
-helm/app/install.ps1
-```
-
-
 ## Manual Test
 
 Try app at http://localhost:8080

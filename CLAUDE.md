@@ -9,46 +9,68 @@ This is a reliability demonstration application built with ASP.NET Core 8.0. It 
 ## Project Structure
 
 ```
-src/ReliabilityDemo/
-├── Controllers/
-│   ├── ConfigController.cs      # Failure configuration management (/api/config)
-│   ├── DataController.cs        # Customer CRUD operations (/api/customers)
-│   └── HealthController.cs      # Health check endpoint (/api/health)
-├── Models/
-│   ├── Customer.cs              # Customer entity model with validation attributes
-│   ├── CreateCustomerRequest.cs # Request model for creating customers
-│   ├── UpdateCustomerRequest.cs # Request model for updating customers
-│   ├── FailureConfig.cs         # Configuration model for failure rates
-│   ├── DataStoreConfig.cs       # Data store provider configuration
-│   ├── RedisDataStoreConfig.cs  # Redis-specific configuration
-│   └── SqlServerDataStoreConfig.cs # SQL Server-specific configuration
-├── Services/
-│   ├── FailureSimulator.cs      # Core failure injection service
-│   ├── IDataStore.cs            # Customer data store interface
-│   ├── RedisDataStore.cs        # Redis-backed customer store with JSON serialization
-│   └── SqlServerDataStore.cs    # SQL Server-backed customer store with EF Core
-├── Data/
-│   └── ReliabilityDemoContext.cs # Entity Framework DbContext for Customer entity
-├── wwwroot/
-│   ├── index.html              # Customer management web interface
-│   └── technical.html          # Technical documentation page
-├── Program.cs                  # Application entry point and DI configuration
-├── ReliabilityDemo.csproj      # Project file with dependencies
-├── Dockerfile                  # Container image definition
-├── appsettings.json           # Production configuration
-└── appsettings.Development.json # Development configuration
+src/
+├── ReliabilityDemo/                # Main API application
+│   ├── Controllers/
+│   │   ├── ConfigController.cs      # Failure configuration management (/api/config)
+│   │   ├── DataController.cs        # Customer CRUD operations (/api/customers)
+│   │   └── HealthController.cs      # Health check endpoint (/api/health)
+│   ├── Models/
+│   │   ├── FailureConfig.cs         # Configuration model for failure rates
+│   │   ├── CreateCustomerRequest.cs # Request model for creating customers
+│   │   ├── UpdateCustomerRequest.cs # Request model for updating customers
+│   │   └── DistributedCacheConfig.cs # Distributed cache configuration
+│   ├── Services/
+│   │   ├── FailureSimulator.cs      # Core failure injection service
+│   │   ├── IDistributedCache.cs     # Distributed cache interface
+│   │   ├── RedisDistributedCache.cs # Redis-backed cache implementation
+│   │   ├── IMessagePublisher.cs     # Message publishing interface
+│   │   └── RedisMessagePublisher.cs # Redis pub/sub message publisher
+│   ├── wwwroot/
+│   │   ├── index.html              # Customer management web interface
+│   │   └── technical.html          # Technical documentation page
+│   ├── Program.cs                  # Application entry point and DI configuration
+│   ├── ReliabilityDemo.csproj      # Project file with dependencies
+│   ├── Dockerfile                  # Container image definition
+│   ├── appsettings.json           # Production configuration
+│   └── appsettings.Development.json # Development configuration
+├── ReliabilityDemo.DataStore/      # Shared data store assembly
+│   ├── Models/
+│   │   ├── Customer.cs              # Customer entity model with validation attributes
+│   │   ├── DataStoreConfig.cs       # Data store provider configuration
+│   │   ├── RedisDataStoreConfig.cs  # Redis-specific configuration
+│   │   └── SqlServerDataStoreConfig.cs # SQL Server-specific configuration
+│   ├── Services/
+│   │   ├── IDataStore.cs            # Customer data store interface
+│   │   ├── RedisDataStore.cs        # Redis-backed customer store with JSON serialization
+│   │   └── SqlServerDataStore.cs    # SQL Server-backed customer store with EF Core
+│   ├── Data/
+│   │   └── ReliabilityDemoContext.cs # Entity Framework DbContext for Customer entity
+│   └── ReliabilityDemo.DataStore.csproj # Shared data store project file
+├── ReliabilityDemo.Messaging/      # Shared messaging assembly
+│   ├── CustomerMessage.cs          # Customer operation message model
+│   ├── MessagingConfig.cs          # Messaging configuration model
+│   └── ReliabilityDemo.Messaging.csproj # Shared messaging project file
+└── ReliabilityDemo.Worker/         # Background message processing worker
+    ├── CustomerMessageWorker.cs    # Background service for processing customer messages
+    ├── Program.cs                  # Worker entry point and DI configuration
+    ├── ReliabilityDemo.Worker.csproj # Worker project file
+    └── Dockerfile                  # Worker container image definition
 docker-compose.yml              # Multi-container deployment with Redis
-helm-chart/                     # Helm chart for Kubernetes deployment
-├── Chart.yaml                  # Chart metadata and dependencies
-├── values.yaml                 # Configurable values
-├── install.ps1                 # Helm install script (PowerShell)
-├── uninstall.ps1               # Helm uninstall script (PowerShell)
-└── templates/                  # Kubernetes resource templates
-    ├── deployment.yaml         # Application deployment template
-    ├── service.yaml            # Service template
-    ├── configmap.yaml          # Configuration template
-    ├── _helpers.tpl            # Template helpers
-    └── NOTES.txt               # Post-install instructions
+helm/                           # Helm charts for Kubernetes deployment
+├── app/                        # Application Helm chart
+│   ├── Chart.yaml              # Chart metadata and dependencies
+│   ├── values.yaml             # Configurable values
+│   ├── install.ps1             # Helm install script (PowerShell)
+│   ├── uninstall.ps1           # Helm uninstall script (PowerShell)
+│   └── templates/              # Kubernetes resource templates
+├── lgtm/                       # LGTM monitoring stack chart
+└── k6/                         # K6 load testing chart
+    ├── scripts/                # K6 JavaScript test files
+    │   ├── customer-load-test.js    # Load testing script
+    │   ├── customer-spike-test.js   # Spike testing script
+    │   └── customer-soak-test.js    # Soak testing script
+    └── templates/              # K6 job templates
 ```
 
 ## Architecture
@@ -60,6 +82,11 @@ The application uses ASP.NET Core 8.0 with:
 - **IDataStore Interface**: Customer-focused data storage abstraction with CRUD operations
 - **RedisDataStore**: Redis-backed implementation using JSON serialization with auto-incrementing IDs  
 - **SqlServerDataStore**: SQL Server-backed implementation using Entity Framework Core with Customer entity
+- **IDistributedCache Interface**: Caching abstraction with get/set/invalidate operations for customers
+- **RedisDistributedCache**: Redis-backed cache implementation with configurable TTL for performance optimization
+- **Message-Driven Writes**: Async processing pattern using Redis pub/sub for all write operations
+- **IMessagePublisher Interface**: Message publishing abstraction for async operations
+- **CustomerMessageWorker**: Separate containerized service that processes customer operation messages from Redis
 - **API Controllers**: RESTful endpoints for customer operations (`/api/customers`), configuration, and health checks
 - **Web Interface**: Customer management portal with create, read, update, delete operations and failure simulation
 
@@ -93,26 +120,22 @@ docker push sixeyed/reliability-demo:m1-01
 
 ### Docker
 ```bash
-# Build and run with Docker Compose (Redis + SQL Server + both app instances)
+# Build and run complete stack (API + Worker + Redis + SQL Server)
 docker-compose up --build
 
-# Run only Redis-backed instance
-docker-compose up reliability-demo-redis redis
-
-# Run only SQL Server-backed instance  
-docker-compose up reliability-demo-sqlserver sqlserver
-
-# Or build Docker image manually
+# Build individual containers
 docker build -t sixeyed/reliability-demo:m1-01 src/ReliabilityDemo/
+docker build -t sixeyed/reliability-demo-worker:m1-01 src/ReliabilityDemo.Worker/
 
 # Push to Docker Hub
 docker push sixeyed/reliability-demo:m1-01
+docker push sixeyed/reliability-demo-worker:m1-01
 
-# Run with Redis backend
+# Run API only (requires Redis for messaging)
 docker run -p 8080:8080 -e DataStore__Provider=Redis -e ConnectionStrings__Redis=redis:6379 sixeyed/reliability-demo:m1-01
 
-# Run with SQL Server backend
-docker run -p 8081:8080 -e DataStore__Provider=SqlServer -e ConnectionStrings__SqlServer="Server=sqlserver;..." sixeyed/reliability-demo:m1-01
+# Run Worker only (requires Redis + SQL Server)
+docker run -e ConnectionStrings__Redis=redis:6379 -e ConnectionStrings__SqlServer="Server=sqlserver;..." sixeyed/reliability-demo-worker:m1-01
 ```
 
 ### Helm
@@ -196,14 +219,26 @@ Failure rates are configurable via the `/api/config` endpoint:
 - `SqlServerDataStore:MaxConcurrentClients`: SQL Server concurrent client limit (default: 5)
 - `SqlServerDataStore:AutoMigrate`: Auto-create database schema (default: true)
 
+**Distributed Cache Configuration** (in `appsettings.json`):
+- `DistributedCache:Enabled`: Enable distributed caching (default: false in production, true in development)
+- `DistributedCache:ExpirationSeconds`: Cache TTL in seconds (default: 300 production, 60 development)
+
+**Messaging Configuration** (in `appsettings.json`):
+- `Messaging:Enabled`: Enable async message processing (default: true)
+- `Messaging:CustomerChannelName`: Redis pub/sub channel name (default: "customer_operations")
+- `Messaging:RetryAttempts`: Number of retry attempts for failed message processing (default: 3)
+- `Messaging:RetryDelayMs`: Base delay between retries in milliseconds (default: 1000 production, 500 development)
+
 **Helm Configuration** (in `helm-chart/values.yaml`):
-- `replicaCount`: Number of application replicas (default: 3)
+- `replicaCount`: Number of application replicas (default: 6)
 - `config.dataStore.provider`: Backend provider ("Redis" or "SqlServer")
-- `config.redisDataStore.maxConcurrentClients`: Redis concurrent clients (default: 10)
-- `config.sqlServerDataStore.maxConcurrentClients`: SQL Server concurrent clients (default: 10)
+- `config.redisDataStore.maxConcurrentClients`: Redis concurrent clients (default: 2)
+- `config.sqlServerDataStore.maxConcurrentClients`: SQL Server concurrent clients (default: 2)
+- `config.distributedCache.enabled`: Enable distributed caching (default: true)
+- `config.distributedCache.expirationSeconds`: Cache TTL in seconds (default: 300)
 - `config.failureConfig.*`: Failure simulation rates and timeouts
 - `redis.enabled`: Enable Redis dependency (default: true)
-- `sqlserver.enabled`: Enable SQL Server deployment (default: false)
+- `sqlserver.enabled`: Enable SQL Server deployment (default: true)
 
 ### Customer Management Interface
 The web interface (`index.html`) provides:
@@ -220,6 +255,27 @@ The web interface (`index.html`) provides:
 - **SQL Server Backend**: Customer entity with EF Core, auto-incrementing primary key, unique email constraint
 - **Interface Design**: Both backends implement the same `IDataStore` interface for customer CRUD operations
 - **Thread Safety**: Concurrent client tracking with locks in both Redis and SQL Server implementations
+
+### Distributed Caching
+- **Cache Layer**: Sits between DataController and data stores for read performance optimization
+- **Redis-Backed**: Uses separate Redis connection for caching regardless of data store provider
+- **Cache Keys**: Individual customers (`cache:customer:{id}`) and all customers (`cache:all_customers`)
+- **TTL Support**: Configurable expiration time for automatic cache invalidation
+- **Cache-Aside Pattern**: Cache miss triggers data store fetch, then caches result for subsequent reads
+- **Invalidation Strategy**: Creates/updates/deletes invalidate both individual and collection caches
+- **Graceful Degradation**: Cache failures don't break application functionality
+
+### Message-Driven Architecture
+- **Separate Containers**: API and Worker run in separate containers for independent scaling
+- **Async Write Operations**: All customer write operations (Create/Update/Delete) use Redis pub/sub messaging
+- **API Response Pattern**: Write endpoints return HTTP 202 Accepted with message tracking information
+- **Background Processing**: CustomerMessageWorker service processes messages asynchronously in dedicated container
+- **Retry Logic**: Failed messages retry with exponential backoff (configurable attempts and delays)
+- **Message Channel**: Uses Redis pub/sub channel `customer_operations` for all customer messages
+- **Correlation Tracking**: Each message includes correlation ID for request tracing
+- **Data Consistency**: Cache invalidation happens immediately on write request, actual persistence via background worker
+- **Reliability**: Worker container continues processing even if API instances restart
+- **Independent Scaling**: API and Worker containers can scale independently based on load patterns
 
 ### Application Architecture  
 - All customer operations go through the `FailureSimulator` before hitting the data store

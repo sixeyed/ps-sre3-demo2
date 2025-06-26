@@ -106,6 +106,21 @@ public class SqlServerDataStore : IDataStore
         }
     }
     
+    public async Task<Customer?> GetCustomerByEmailAsync(string email)
+    {
+        await SimulateFailure("read");
+        CheckConcurrentClients();
+        try
+        {
+            await Task.Delay(50); // Simulate database latency
+            return await _context.Customers.FirstOrDefaultAsync(c => c.Email == email);
+        }
+        finally
+        {
+            ReleaseConcurrentClient();
+        }
+    }
+    
     public async Task<Customer> CreateCustomerAsync(Customer customer)
     {
         await SimulateFailure("write");
@@ -119,6 +134,7 @@ public class SqlServerDataStore : IDataStore
             
             _context.Customers.Add(customer);
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Saved new customer; email address: {EmailAddress}; id: {CustomerId}", customer.Email, customer.Id);
             
             return customer;
         }
