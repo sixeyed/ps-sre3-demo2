@@ -137,6 +137,8 @@ grafana:
     server:
       root_url: "%(protocol)s://%(domain)s:%(http_port)s/"
       serve_from_sub_path: false
+    users:
+      default_theme: light
 
 # Promtail configuration for log collection
 promtail:

@@ -7,19 +7,23 @@ Spin up a multi-node cluster:
 k3d cluster create sre3-m1 --api-port 6550 --servers 1 --agents 3 --port 8080:8080@loadbalancer --port 3000:3000@loadbalancer
 ```
 
-- deploy with set error values:
+Deploy LGTM stack:
+
+```
+helm upgrade --install lgtm . `
+  --namespace monitoring --create-namespace `
+  ./helm/lgtm/
+```
+
+Deploy app default error values:
 
 ```
 helm upgrade --install reliability-demo `
   --namespace sre3-m1 --create-namespace `
-  ./helm-chart/
+  ./helm/app/
 ```
 
-- create K6 resources:
 
-```
-kubectl apply -f ./test/k6/
-```
 
 ## Manual Test
 
@@ -40,26 +44,16 @@ Last two are dev team fixes - implementation and better error handling
 
 Reliability can be an SRE fix
 
-## Soak Test
+## Soak, Load & Spike Tests
 
-Executes GET with concurrency 10 for 30m:
-
-```
-kubectl apply -f test/k6/jobs/customer-soak-test-job.yaml
-```
-
-Check web app - loads all customers in homepage
-
-## Load Test
+Run K6 scripts
 
 ```
-kubectl apply -f test/k6/jobs/customer-load-test-job.yaml
+kubectl delete jobs -n k6 --all
+
+kubectl apply -f ./test/k6/
 ```
 
-> Will fail as SLOs breached & retry once
+Check dashboard at
 
-## Spike Test
-
-```
-kubectl apply -f test/k6/jobs/customer-spike-test-job.yaml
-```
+> http://localhost:3000/d/reliability-demo-logs/reliability-demo-log-analytics?orgId=1&refresh=30s&from=now-5m&to=now
