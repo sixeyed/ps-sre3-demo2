@@ -1,0 +1,35 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information"
+    },
+    "Console": {
+      "FormatterName": "json",
+      "IncludeScopes": true,
+      "TimestampFormat": "HH:mm:ss.fff"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "Redis": "{{ .Release.Name }}-redis-master:6379,abortConnect=false",
+    "SqlServer": "{{ include "reliability-demo.sqlServerConnectionString" . }}"
+  },
+  "SqlServerDataStore": {
+    "MaxConcurrentClients": {{ .Values.config.sqlServerDataStore.maxConcurrentClients | int }},
+    "AutoMigrate": {{ .Values.config.sqlServerDataStore.autoMigrate }}
+  },
+  "DistributedCache": {
+    "Enabled": {{ .Values.config.distributedCache.enabled }},
+    "ExpirationSeconds": {{ .Values.config.distributedCache.expirationSeconds | int }}
+  },
+  "CustomerOperation": {
+    "Pattern": "{{ .Values.config.customerOperation.pattern }}"
+  },
+  "Messaging": {
+    "CreateCustomerQueueName": "{{ .Values.config.messaging.createCustomerQueueName }}",
+    "UpdateCustomerQueueName": "{{ .Values.config.messaging.updateCustomerQueueName }}",
+    "DeleteCustomerQueueName": "{{ .Values.config.messaging.deleteCustomerQueueName }}",
+    "RetryAttempts": {{ .Values.config.messaging.retryAttempts | int }},
+    "RetryDelayMs": {{ .Values.config.messaging.retryDelayMs | int }}
+  }
+}

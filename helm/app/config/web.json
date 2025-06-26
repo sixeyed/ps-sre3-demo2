@@ -1,0 +1,11 @@
+{
+  "FailureConfig": {
+    "ConnectionFailureRate": {{ .Values.config.failureConfig.connectionFailureRate | float64 }},
+    "ReadTimeoutRate": {{ .Values.config.failureConfig.readTimeoutRate | float64 }},
+    "WriteTimeoutRate": {{ .Values.config.failureConfig.writeTimeoutRate | float64 }},
+    "SlowResponseRate": {{ .Values.config.failureConfig.slowResponseRate | float64 }},
+    "ReadTimeoutMs": {{ .Values.config.failureConfig.readTimeoutMs | int }},
+    "WriteTimeoutMs": {{ .Values.config.failureConfig.writeTimeoutMs | int }},
+    "SlowResponseDelayMs": {{ .Values.config.failureConfig.slowResponseDelayMs | int }}
+  }
+}

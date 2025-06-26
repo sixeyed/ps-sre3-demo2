@@ -1,0 +1,9 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "ReliabilityDemo.Services.FailureSimulator": "Information",
+      "ReliabilityDemo.Controllers": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}

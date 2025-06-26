@@ -1,0 +1,40 @@
+{{- if eq .Values.config.customerOperation.pattern "Async" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "reliability-demo.fullname" . }}-worker
+  labels:
+    {{- include "reliability-demo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "reliability-demo.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        {{- include "reliability-demo.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/worker-configmap.yaml") . | sha256sum }}
+    spec:
+      containers:
+      - name: worker
+        image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+        resources:
+          {{- toYaml .Values.worker.resources | nindent 10 }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "reliability-demo.fullname" . }}-worker-config
+{{- end }}

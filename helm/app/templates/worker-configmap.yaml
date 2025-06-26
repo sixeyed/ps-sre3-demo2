@@ -1,0 +1,16 @@
+{{- if eq .Values.config.customerOperation.pattern "Async" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "reliability-demo.fullname" . }}-worker-config
+  labels:
+    {{- include "reliability-demo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+data:
+  logging.json: |
+{{ tpl (.Files.Get "config/worker-logging.json") . | indent 4 }}
+  shared.json: |
+{{ tpl (.Files.Get "config/shared.json") . | indent 4 }}
+  worker.json: |
+{{ tpl (.Files.Get "config/worker.json") . | indent 4 }}
+{{- end }}
