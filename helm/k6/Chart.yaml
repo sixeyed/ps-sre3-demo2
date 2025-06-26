@@ -1,0 +1,13 @@
+apiVersion: v2
+name: k6-tests
+description: K6 load testing suite for reliability demo
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - testing
+  - load-testing
+  - k6
+  - performance
+maintainers:
+  - name: SRE Team

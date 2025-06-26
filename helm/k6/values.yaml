@@ -1,0 +1,97 @@
+# K6 Test Suite Configuration
+nameOverride: ""
+fullnameOverride: ""
+
+# Target application configuration
+target:
+  service: "reliability-demo.sre3-m1.svc.cluster.local"
+  port: 8080
+
+# Test execution configuration
+tests:
+  # Sequential test job configuration
+  sequential:
+    enabled: true
+    image: "grafana/k6:latest"
+    activeDeadlineSeconds: 900  # 15 minutes timeout
+    backoffLimit: 1
+    
+    # Resource configuration
+    resources:
+      requests:
+        memory: "1G"
+        cpu: "1"
+      limits:
+        memory: "3G"
+        cpu: "2"
+    
+    # Test sequence
+    sequence:
+      - name: "Soak Test"
+        script: "customer-soak-test.js"
+        duration: "5m"
+        description: "30 constant users testing GET /api/customers"
+      - name: "Load Test"
+        script: "customer-load-test.js" 
+        duration: "4m"
+        description: "Ramping load creating customers (5→15→35→25→5 users)"
+      - name: "Spike Test"
+        script: "customer-spike-test.js"
+        duration: "2m"
+        description: "Quick spike to 50 users then recovery"
+
+  # Individual test jobs (can be enabled separately)
+  individual:
+    enabled: false
+    
+# Test scripts configuration
+scripts:
+  # Soak test - steady load over extended period
+  soak:
+    thresholds:
+      http_req_failed: "0.02"
+      http_req_duration: "1000"
+    scenarios:
+      vus: 30
+      duration: "5m"
+  
+  # Load test - ramping users with CRUD operations  
+  load:
+    thresholds:
+      http_req_failed: "0.05"
+      http_req_duration: "750"
+    scenarios:
+      stages:
+        - duration: "30s"
+          target: 5
+        - duration: "1m"
+          target: 15
+        - duration: "30s"
+          target: 35
+        - duration: "1m"
+          target: 25
+        - duration: "30s"
+          target: 5
+  
+  # Spike test - sudden load increase
+  spike:
+    thresholds:
+      http_req_failed: "0.05"
+      http_req_duration: "500"
+    scenarios:
+      stages:
+        - duration: "30s"
+          target: 5
+        - duration: "10s"
+          target: 50
+        - duration: "1m"
+          target: 50
+        - duration: "10s"
+          target: 5
+        - duration: "30s"
+          target: 5
+
+# Job naming configuration
+job:
+  # Random suffix length for unique job names
+  randomSuffixLength: 5

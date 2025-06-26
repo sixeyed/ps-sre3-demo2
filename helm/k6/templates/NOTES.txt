@@ -1,0 +1,31 @@
+🧪 K6 Test Suite Deployed Successfully!
+
+{{- if .Values.tests.sequential.enabled }}
+
+✅ Sequential Test Job: k6-customer-all-tests-{{ include "k6-tests.randomSuffix" . }}
+
+Test Sequence:
+{{- range $index, $test := .Values.tests.sequential.sequence }}
+{{- $step := add $index 1 }}
+  {{ $step }}. {{ $test.name }} ({{ $test.duration }})
+     {{ $test.description }}
+{{- end }}
+
+Target: {{ .Values.target.service }}:{{ .Values.target.port }}
+Timeout: {{ .Values.tests.sequential.activeDeadlineSeconds }}s ({{ div .Values.tests.sequential.activeDeadlineSeconds 60 }} minutes)
+
+{{- end }}
+
+📊 Monitor Progress:
+  kubectl logs -n k6 -l k6.test/type=sequential -f
+
+📈 View Results in Grafana:
+  http://localhost:3000/d/reliability-demo-logs/reliability-demo-log-analytics
+
+🔍 Check Job Status:
+  kubectl get jobs -n k6
+
+🧹 Cleanup Previous Jobs:
+  kubectl delete jobs -n k6 --all
+
+Happy Testing! 🚀

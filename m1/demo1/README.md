@@ -46,12 +46,17 @@ Reliability can be an SRE fix
 
 ## Soak, Load & Spike Tests
 
-Run K6 scripts
+Run K6 test suite with Helm:
+
+```
+helm upgrade --install k6-tests ./helm/k6/ --namespace k6 --create-namespace
+```
+
+Or clean up previous runs first:
 
 ```
 kubectl delete jobs -n k6 --all
-
-kubectl apply -f ./test/k6/
+helm upgrade k6-tests ./helm/k6/ --namespace k6
 ```
 
 Check dashboard at

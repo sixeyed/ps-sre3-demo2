@@ -1,0 +1,45 @@
+{{- if .Values.tests.sequential.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-customer-all-tests-{{ include "k6-tests.randomSuffix" . }}
+  namespace: k6
+  labels:
+    {{- include "k6-tests.labels" . | nindent 4 }}
+    k6.test/type: sequential
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "1"
+spec:
+  activeDeadlineSeconds: {{ .Values.tests.sequential.activeDeadlineSeconds }}
+  backoffLimit: {{ .Values.tests.sequential.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "k6-tests.selectorLabels" . | nindent 8 }}
+        k6.test/type: sequential
+    spec:
+      containers:
+      - name: k6
+        image: {{ .Values.tests.sequential.image }}
+        command: ["/bin/sh"]
+        args: ["-c", "{{ include "k6-tests.sequentialCommand" . }}"]
+        volumeMounts:
+        - name: k6-script
+          mountPath: /scripts
+        env:
+        - name: K6_OUT
+          value: "json=/tmp/results.json"
+        - name: TARGET_SERVICE
+          value: "{{ .Values.target.service }}"
+        - name: TARGET_PORT
+          value: "{{ .Values.target.port }}"
+        resources:
+          {{- toYaml .Values.tests.sequential.resources | nindent 10 }}
+      volumes:
+      - name: k6-script
+        configMap:
+          name: k6-customer-test-scripts
+          defaultMode: 0755
+      restartPolicy: Never
+{{- end }}
