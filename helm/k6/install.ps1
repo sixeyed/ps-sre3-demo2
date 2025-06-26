@@ -6,8 +6,12 @@
 param(
     [string]$ReleaseName = "k6-tests",
     [string]$Namespace = "k6",
-    [switch]$CleanupFirst = $false
+    [switch]$CleanupFirst = $false,
+    [switch]$UpdateDependencies = $false
 )
+
+# Change to script directory to ensure relative paths work
+Push-Location $PSScriptRoot
 
 Write-Host "🧪 Installing K6 Test Suite..." -ForegroundColor Blue
 Write-Host "Release Name: $ReleaseName" -ForegroundColor Yellow
@@ -17,6 +21,18 @@ Write-Host ""
 if ($CleanupFirst) {
     Write-Host "🧹 Cleaning up previous test jobs..." -ForegroundColor Yellow
     kubectl delete jobs -n $Namespace --all 2>$null
+    Write-Host ""
+}
+
+# Update Helm dependencies if requested
+if ($UpdateDependencies) {
+    Write-Host "📦 Updating Helm dependencies..." -ForegroundColor Blue
+    helm dependency update .
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "❌ Failed to update Helm dependencies" -ForegroundColor Red
+        Pop-Location
+        exit 1
+    }
     Write-Host ""
 }
 
@@ -42,5 +58,9 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "  http://localhost:3000/d/reliability-demo-logs/reliability-demo-log-analytics" -ForegroundColor White
 } else {
     Write-Host "❌ Installation failed!" -ForegroundColor Red
+    Pop-Location
     exit 1
 }
+
+# Return to original directory
+Pop-Location

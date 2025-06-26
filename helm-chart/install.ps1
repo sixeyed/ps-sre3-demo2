@@ -5,28 +5,21 @@
 
 param(
     [string]$ReleaseName = "reliability-demo",
-    [string]$Namespace = "sre3-m1",
-    [switch]$UpdateDependencies = $false
+    [string]$Namespace = "sre3-m1"
 )
-
-# Change to script directory to ensure relative paths work
-Push-Location $PSScriptRoot
 
 Write-Host "Installing Reliability Demo Helm chart..." -ForegroundColor Blue
 Write-Host "Release: $ReleaseName" -ForegroundColor Yellow
 Write-Host "Namespace: $Namespace" -ForegroundColor Yellow
 Write-Host ""
 
-# Update Helm dependencies if requested
-if ($UpdateDependencies) {
-    Write-Host "Updating Helm dependencies..." -ForegroundColor Blue
-    helm dependency update
+# Update Helm dependencies
+Write-Host "Updating Helm dependencies..." -ForegroundColor Blue
+helm dependency update
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "❌ Failed to update Helm dependencies" -ForegroundColor Red
-        Pop-Location
-        exit 1
-    }
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Failed to update Helm dependencies" -ForegroundColor Red
+    exit 1
 }
 
 # Install the chart
@@ -51,9 +44,5 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "  helm uninstall $ReleaseName -n $Namespace" -ForegroundColor White
 } else {
     Write-Host "❌ Installation failed" -ForegroundColor Red
-    Pop-Location
     exit 1
 }
-
-# Return to original directory
-Pop-Location

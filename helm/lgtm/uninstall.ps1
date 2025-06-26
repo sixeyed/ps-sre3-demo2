@@ -9,6 +9,9 @@ param(
     [switch]$DeleteNamespace = $false
 )
 
+# Change to script directory to ensure relative paths work
+Push-Location $PSScriptRoot
+
 Write-Host "🗑️  Uninstalling LGTM Monitoring Stack..." -ForegroundColor Red
 Write-Host "Release Name: $ReleaseName" -ForegroundColor Yellow
 Write-Host "Namespace: $Namespace" -ForegroundColor Yellow
@@ -35,6 +38,7 @@ Write-Host ""
 $confirmation = Read-Host "Are you sure you want to continue? (y/N)"
 if ($confirmation -ne "y" -and $confirmation -ne "Y") {
     Write-Host "❌ Uninstall cancelled." -ForegroundColor Yellow
+    Pop-Location
     exit 0
 }
 
@@ -84,5 +88,9 @@ if ($LASTEXITCODE -eq 0) {
 } else {
     Write-Host "❌ Failed to uninstall monitoring stack" -ForegroundColor Red
     Write-Host "You may need to manually clean up resources." -ForegroundColor Yellow
+    Pop-Location
     exit 1
 }
+
+# Return to original directory
+Pop-Location

@@ -10,19 +10,14 @@ k3d cluster create sre3-m1 --api-port 6550 --servers 1 --agents 3 --port 8080:80
 Deploy LGTM stack:
 
 ```
-helm upgrade --install lgtm . `
-  --namespace monitoring --create-namespace `
-  ./helm/lgtm/
+helm/lgtm/install.ps1
 ```
 
-Deploy app default error values:
+Deploy app :
 
 ```
-helm upgrade --install reliability-demo `
-  --namespace sre3-m1 --create-namespace `
-  ./helm/app/
+helm/app/install.ps1
 ```
-
 
 
 ## Manual Test
@@ -49,14 +44,7 @@ Reliability can be an SRE fix
 Run K6 test suite with Helm:
 
 ```
-helm upgrade --install k6-tests ./helm/k6/ --namespace k6 --create-namespace
-```
-
-Or clean up previous runs first:
-
-```
-kubectl delete jobs -n k6 --all
-helm upgrade k6-tests ./helm/k6/ --namespace k6
+helm/k6/install.ps1
 ```
 
 Check dashboard at

@@ -8,6 +8,9 @@ param(
     [string]$Namespace = "sre3-m1"
 )
 
+# Change to script directory to ensure relative paths work
+Push-Location $PSScriptRoot
+
 Write-Host "Uninstalling Reliability Demo Helm chart..." -ForegroundColor Blue
 Write-Host "Release: $ReleaseName" -ForegroundColor Yellow
 Write-Host "Namespace: $Namespace" -ForegroundColor Yellow
@@ -23,5 +26,9 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "Check with: kubectl get pv" -ForegroundColor White
 } else {
     Write-Host "❌ Uninstallation failed" -ForegroundColor Red
+    Pop-Location
     exit 1
 }
+
+# Return to original directory
+Pop-Location

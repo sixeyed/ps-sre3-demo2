@@ -9,6 +9,9 @@ param(
     [switch]$DeleteNamespace = $false
 )
 
+# Change to script directory to ensure relative paths work
+Push-Location $PSScriptRoot
+
 Write-Host "🧹 Uninstalling K6 Test Suite..." -ForegroundColor Blue
 Write-Host "Release Name: $ReleaseName" -ForegroundColor Yellow
 Write-Host "Namespace: $Namespace" -ForegroundColor Yellow
@@ -32,5 +35,9 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ K6 Test Suite uninstalled successfully!" -ForegroundColor Green
 } else {
     Write-Host "❌ Uninstallation encountered issues!" -ForegroundColor Red
+    Pop-Location
     exit 1
 }
+
+# Return to original directory
+Pop-Location

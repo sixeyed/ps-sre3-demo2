@@ -5,20 +5,27 @@
 
 param(
     [string]$ReleaseName = "monitoring",
-    [string]$Namespace = "logs"
+    [string]$Namespace = "logs",
+    [switch]$UpdateDependencies = $false
 )
+
+# Change to script directory to ensure relative paths work
+Push-Location $PSScriptRoot
 
 Write-Host "🚀 Installing LGTM Monitoring Stack..." -ForegroundColor Blue
 Write-Host "Release Name: $ReleaseName" -ForegroundColor Yellow
 Write-Host "Namespace: $Namespace" -ForegroundColor Yellow
 Write-Host ""
 
-# Update Helm dependencies
-Write-Host "📦 Updating Helm dependencies..." -ForegroundColor Blue
-$depResult = helm dependency update .
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Failed to update Helm dependencies" -ForegroundColor Red
-    exit 1
+# Update Helm dependencies if requested
+if ($UpdateDependencies) {
+    Write-Host "📦 Updating Helm dependencies..." -ForegroundColor Blue
+    $depResult = helm dependency update .
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "❌ Failed to update Helm dependencies" -ForegroundColor Red
+        Pop-Location
+        exit 1
+    }
 }
 
 # Install or upgrade the release
@@ -70,5 +77,9 @@ if ($LASTEXITCODE -eq 0) {
 } else {
     Write-Host "❌ Failed to install monitoring stack" -ForegroundColor Red
     Write-Host "Check the error messages above and try again." -ForegroundColor Yellow
+    Pop-Location
     exit 1
 }
+
+# Return to original directory
+Pop-Location
