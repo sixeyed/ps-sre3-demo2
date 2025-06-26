@@ -1,0 +1,36 @@
+1. Get the Grafana URL by running these commands:
+{{- if contains "LoadBalancer" .Values.grafana.service.type }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+        You can watch the status by running 'kubectl get --namespace {{ .Values.global.namespace }} svc -w grafana'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Values.global.namespace }} grafana --template "{{ "{{" }} range (index .status.loadBalancer.ingress 0) {{ "}}" }}{{ "{{" }}.{{ "}}" }}{{ "{{" }} end {{ "}}" }}")
+  echo http://$SERVICE_IP:{{ .Values.grafana.service.port }}
+{{- else if contains "ClusterIP" .Values.grafana.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Values.global.namespace }} -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  echo "Visit http://127.0.0.1:3000 to use your application"
+  kubectl --namespace {{ .Values.global.namespace }} port-forward $POD_NAME 3000:3000
+{{- end }}
+
+2. Access Grafana:
+   No login required - anonymous access enabled with admin rights!
+
+3. Loki is available at:
+   URL: http://loki.{{ .Values.global.namespace }}.svc.cluster.local:3100
+
+4. To view logs from your application pods:
+   - Open Grafana
+   - Go to Explore
+   - Select Loki as the datasource
+   - Use queries like:
+     * {namespace="sre3-m1"} - All logs from sre3-m1 namespace
+     * {app="reliability-demo"} - All logs from reliability-demo app
+     * {namespace="sre3-m1"} |= "ERROR" - Error logs from sre3-m1 namespace
+
+5. Promtail is running as a DaemonSet and collecting logs from:
+   - All pods in all namespaces (except kube-system)
+   - Container logs are automatically parsed
+   - Labels include: namespace, pod, container, app
+
+6. To check the status of the monitoring stack:
+   kubectl get pods -n {{ .Values.global.namespace }}
+
+Happy monitoring! 📊

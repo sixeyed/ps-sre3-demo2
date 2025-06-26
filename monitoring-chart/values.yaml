@@ -1,0 +1,247 @@
+# Default values for LGTM monitoring stack
+global:
+  namespace: logs
+
+# Loki configuration for log storage and querying
+loki:
+  enabled: true
+  fullnameOverride: "loki"
+  
+  # Use SingleBinary deployment with multiple replicas
+  deploymentMode: SingleBinary
+  
+  # Single binary configuration with multiple replicas
+  singleBinary:
+    replicas: 2
+    persistence:
+      enabled: true
+      size: 10Gi
+  
+  # Disable distributed components
+  backend:
+    replicas: 0
+  read:
+    replicas: 0
+  write:
+    replicas: 0
+  
+  # Disable canary and other optional components
+  lokiCanary:
+    enabled: false
+  
+  test:
+    enabled: false
+  
+  gateway:
+    enabled: false
+  
+  # Loki configuration
+  loki:
+    auth_enabled: false
+    server:
+      http_listen_port: 3100
+      grpc_listen_port: 9095
+    
+    memberlist:
+      join_members: []
+    
+    # Use filesystem storage instead of S3
+    schema_config:
+      configs:
+        - from: 2020-10-24
+          store: boltdb-shipper
+          object_store: filesystem
+          schema: v11
+          index:
+            prefix: index_
+            period: 24h
+    
+    storage_config:
+      boltdb_shipper:
+        active_index_directory: /var/loki/boltdb-shipper-active
+        cache_location: /var/loki/boltdb-shipper-cache
+        shared_store: filesystem
+      filesystem:
+        directory: /var/loki/chunks
+    
+    # Disable compactor to avoid S3 dependencies
+    compactor:
+      working_directory: /var/loki/boltdb-shipper-compactor
+      shared_store: filesystem
+    
+    # Increase concurrent tail requests limit
+    limits_config:
+      max_concurrent_tail_requests: 50
+      
+  # Enable persistence for logs
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: null  # Use default storage class
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 3100
+
+# Grafana configuration for visualization
+grafana:
+  enabled: true
+  fullnameOverride: "grafana"
+  
+  # Default admin credentials
+  adminUser: admin
+  adminPassword: admin123
+  
+  # Enable persistence for dashboards and config
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: null
+  
+  # Datasources configuration
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Loki
+          type: loki
+          url: http://loki:3100
+          access: proxy
+          isDefault: true
+          jsonData:
+            maxLines: 1000
+        - name: Prometheus
+          type: prometheus
+          url: http://prometheus:9090
+          access: proxy
+          isDefault: false
+  
+  # Service configuration
+  service:
+    type: LoadBalancer
+    port: 3000
+  
+  # Enable anonymous access with admin rights
+  grafana.ini:
+    auth.anonymous:
+      enabled: true
+      org_role: Admin
+    server:
+      root_url: "%(protocol)s://%(domain)s:%(http_port)s/"
+      serve_from_sub_path: false
+
+# Promtail configuration for log collection
+promtail:
+  enabled: true
+  fullnameOverride: "promtail"
+  
+  config:
+    # Loki client configuration
+    clients:
+      - url: http://loki:3100/loki/api/v1/push
+        tenant_id: 1
+    
+    # Scrape configuration for Kubernetes pods
+    scrape_configs:
+      # Kubernetes pods via /var/log/pods (works with both containerd and docker)
+      - job_name: kubernetes-pods
+        kubernetes_sd_configs:
+          - role: pod
+        pipeline_stages:
+          - cri: {}
+        relabel_configs:
+          # Get container name
+          - source_labels:
+              - __meta_kubernetes_pod_container_name
+            target_label: container
+          
+          # Get pod name
+          - source_labels:
+              - __meta_kubernetes_pod_name
+            target_label: pod
+          
+          # Get namespace
+          - source_labels:
+              - __meta_kubernetes_namespace
+            target_label: namespace
+          
+          # Get node name
+          - source_labels:
+              - __meta_kubernetes_pod_node_name
+            target_label: node
+          
+          # Include application label if present
+          - source_labels:
+              - __meta_kubernetes_pod_label_app
+            target_label: app
+            
+          # Include app.kubernetes.io/name label if present
+          - source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_name
+            target_label: app_name
+          
+          # Set filename using /var/log/pods path (universal for k8s)
+          - source_labels:
+              - __meta_kubernetes_pod_uid
+              - __meta_kubernetes_pod_container_name
+            target_label: __path__
+            separator: /
+            replacement: /var/log/pods/*$1*/$2/*.log
+          
+          # Drop pods in kube-system namespace
+          - source_labels:
+              - __meta_kubernetes_namespace
+            regex: kube-system
+            action: drop
+          
+          # Drop promtail itself to avoid log loops
+          - source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_name
+            regex: promtail
+            action: drop
+          
+          # Drop loki pods to avoid log loops
+          - source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_name
+            regex: loki
+            action: drop
+
+  # DaemonSet configuration to run on all nodes
+  daemonset:
+    enabled: true
+  
+  # Mount log directories for containerd
+  volumes:
+    - name: varlog
+      hostPath:
+        path: /var/log
+    - name: varlibcontainerd
+      hostPath:
+        path: /var/lib/containerd
+    - name: runcontainerd
+      hostPath:
+        path: /run/containerd
+  
+  volumeMounts:
+    - name: varlog
+      mountPath: /var/log
+      readOnly: true
+    - name: varlibcontainerd
+      mountPath: /var/lib/containerd
+      readOnly: true
+    - name: runcontainerd
+      mountPath: /run/containerd
+      readOnly: true
+  
+  # Resource limits
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Namespace configuration
+createNamespace: false
