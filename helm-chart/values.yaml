@@ -1,5 +1,5 @@
 # Reliability Demo application configuration
-replicaCount: 1
+replicaCount: 6
 
 image:
   repository: sixeyed/reliability-demo
@@ -33,9 +33,9 @@ config:
     writeTimeoutMs: 1000
     slowResponseDelayMs: 3000
   redisDataStore:
-    maxConcurrentClients: 10
+    maxConcurrentClients: 2
   sqlServerDataStore:
-    maxConcurrentClients: 10
+    maxConcurrentClients: 2
     autoMigrate: true
 
 # Redis dependency configuration (Bitnami chart)

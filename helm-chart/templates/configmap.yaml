@@ -15,6 +15,7 @@ data:
           "Microsoft.EntityFrameworkCore": "Warning",
         },
         "Console": {
+          "FormatterName": "json",
           "IncludeScopes": false,
           "TimestampFormat": "HH:mm:ss "
         }

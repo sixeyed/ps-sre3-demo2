@@ -122,6 +122,13 @@ grafana:
     type: LoadBalancer
     port: 3000
   
+  # Dashboard provider configuration - simplified
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      folder: /tmp/dashboards
+  
   # Enable anonymous access with admin rights
   grafana.ini:
     auth.anonymous:

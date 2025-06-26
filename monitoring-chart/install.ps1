@@ -4,8 +4,8 @@
 # Usage: ./install.ps1 [ReleaseName] [Namespace]
 
 param(
-    [string]$ReleaseName = "lgtm-monitoring",
-    [string]$Namespace = "monitoring"
+    [string]$ReleaseName = "monitoring",
+    [string]$Namespace = "logs"
 )
 
 Write-Host "🚀 Installing LGTM Monitoring Stack..." -ForegroundColor Blue

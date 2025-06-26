@@ -1,13 +1,17 @@
 
+## Setup
+
+Spin up a multi-node cluster:
+
+```
+k3d cluster create sre3-m1 --api-port 6550 --servers 1 --agents 3 --port 8080:8080@loadbalancer --port 3000:3000@loadbalancer
+```
 
 - deploy with set error values:
 
 ```
 helm upgrade --install reliability-demo `
   --namespace sre3-m1 --create-namespace `
-  --set config.failureConfig.connectionFailureRate=0.1 `
-  --set config.failureConfig.readTimeoutRate=0.5 `
-  --set config.failureConfig.writeTimeoutRate=0.3 `
   ./helm-chart/
 ```
 
@@ -26,10 +30,9 @@ Try app at http://localhost:8080
 - create customer - repeat to see errors
 - create customer with duplicate email
 
-Check logs:
+Check logs
 
-```
-```
+> grafana
 
 - delete customer - not found
 

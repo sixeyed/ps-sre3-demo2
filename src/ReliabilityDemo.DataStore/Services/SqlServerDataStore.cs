@@ -160,27 +160,7 @@ public class SqlServerDataStore : IDataStore
     
     public async Task<bool> DeleteCustomerAsync(int id)
     {
-        await SimulateFailure("write");
-        CheckConcurrentClients();
-        try
-        {
-            await Task.Delay(50); // Simulate database latency
-            
-            var customer = await _context.Customers.FindAsync(id);
-            if (customer == null)
-            {
-                return false;
-            }
-            
-            _context.Customers.Remove(customer);
-            await _context.SaveChangesAsync();
-            
-            return true;
-        }
-        finally
-        {
-            ReleaseConcurrentClient();
-        }
+        throw new NotImplementedException();
     }
     
     public async Task<IEnumerable<Customer>> GetAllCustomersAsync()
