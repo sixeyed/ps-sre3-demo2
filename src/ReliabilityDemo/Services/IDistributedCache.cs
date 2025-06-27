@@ -12,4 +12,6 @@ public interface IDistributedCache
     Task InvalidateCustomerAsync(int id);
     Task InvalidateCustomerByEmailAsync(string email);
     Task InvalidateAllCustomersAsync();
+    Task InvalidateAllAsync();
+    Task<object> GetCacheStatusAsync();
 }

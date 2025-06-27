@@ -29,9 +29,9 @@ Try app at http://localhost:8080
 - create customer - repeat to see errors
 - create customer with duplicate email
 
-Check logs
+Check application logs:
 
-> grafana
+> http://localhost:3000/explore?schemaVersion=1&panes=%7B%22zwl%22:%7B%22datasource%22:%22P8E80F9AEF21F6940%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22expr%22:%22%7Bnamespace%3D%5C%22sre3-m1%5C%22%7D%20%7C%3D%20%60%60%22,%22queryType%22:%22range%22,%22datasource%22:%7B%22type%22:%22loki%22,%22uid%22:%22P8E80F9AEF21F6940%22%7D,%22editorMode%22:%22builder%22%7D%5D,%22range%22:%7B%22from%22:%22now-1h%22,%22to%22:%22now%22%7D%7D%7D&orgId=1
 
 - delete customer - not found
 
@@ -58,13 +58,17 @@ Parameterized values:
 
 - [k6/values.yaml](/helm/k6/values.yaml) - durations and concurrency set in values
 
-Check dashboard at
+Check K6 logs:
 
-> http://localhost:3000/d/reliability-demo-logs/reliability-demo-log-analytics?orgId=1&refresh=30s&from=now-5m&to=now
+> http://localhost:3000/explore?schemaVersion=1&panes=%7B%22zwl%22:%7B%22datasource%22:%22P8E80F9AEF21F6940%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22expr%22:%22%7Bnamespace%3D%5C%22k6%5C%22%7D%20%7C%3D%20%60%60%22,%22queryType%22:%22range%22,%22datasource%22:%7B%22type%22:%22loki%22,%22uid%22:%22P8E80F9AEF21F6940%22%7D,%22editorMode%22:%22builder%22%7D%5D,%22range%22:%7B%22from%22:%22now-15m%22,%22to%22:%22now%22%7D%7D%7D&orgId=1
+
+Check dashboard:
+
+> http://localhost:3000/d/reliability-demo-logs/reliability-demo-log-analytics?orgId=1&refresh=30s&from=now-15m&to=now
 
 Test run stats:
 
 - inserts ~3000 customers
-- ~20K info logs
-- ~10K warning logs
-- ~500 error logs
+- ~12K info logs
+- ~6K warning logs
+- ~200 error logs

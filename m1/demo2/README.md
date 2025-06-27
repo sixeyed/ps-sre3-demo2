@@ -14,6 +14,8 @@ helm upgrade -n sre3-m1 reliability-demo helm/app `
  --set config.distributedCache.enabled=true 
 ```
 
+> Check Pods
+
 - [RedisDistributedCache.cs](/src/ReliabilityDemo/Services/RedisDistributedCache.cs) - distributed cache using Redis
 - [DataController.cs](/src/ReliabilityDemo/Controllers/DataController.cs) -  API controller using the cache
 
@@ -25,9 +27,7 @@ Manual test
 
 Reset database:
 
-```
-./reset-database.ps1
-```
+> http://localhost:8080
 
 Run K6 test suite:
 
@@ -55,9 +55,7 @@ helm upgrade -n sre3-m1 reliability-demo helm/app `
 
 Reset database:
 
-```
-./reset-database.ps1
-```
+> http://localhost:8080
 
 Run K6 test suite:
 
@@ -75,5 +73,5 @@ Check dashboard at
 Delete cluster:
 
 ```
-k3d cluster delete sre-m1
+k3d cluster delete sre3-m1
 ```

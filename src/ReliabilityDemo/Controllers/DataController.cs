@@ -11,6 +11,20 @@ namespace ReliabilityDemo.Controllers;
 [Route("api/customers")]
 public class DataController : ControllerBase
 {
+    // Event IDs for structured logging
+    private static class EventIds
+    {
+        public static readonly EventId CustomerFetchRequest = new(4001, "CustomerFetchRequest");
+        public static readonly EventId CustomerServedCache = new(4002, "CustomerServedCache");
+        public static readonly EventId CustomerServedDb = new(4003, "CustomerServedDb");
+        public static readonly EventId CustomerFetchEmailRequest = new(4004, "CustomerFetchEmailRequest");
+        public static readonly EventId CustomerServedCacheEmail = new(4005, "CustomerServedCacheEmail");
+        public static readonly EventId CustomerServedDbEmail = new(4006, "CustomerServedDbEmail");
+        public static readonly EventId CustomerFetchAllRequest = new(4007, "CustomerFetchAllRequest");
+        public static readonly EventId CustomerServedAllCache = new(4008, "CustomerServedAllCache");
+        public static readonly EventId CustomerServedAllDb = new(4009, "CustomerServedAllDb");
+    }
+    
     private readonly IDataStore _dataStore;
     private readonly IDistributedCache _cache;
     private readonly ICustomerOperationService _customerOperationService;
@@ -29,14 +43,14 @@ public class DataController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetCustomer(int id)
     {
-        _logger.LogDebug("Getting customer with ID: {Id} using {DataStore}", id, _dataStoreType);
+        _logger.LogInformation(EventIds.CustomerFetchRequest, "Customer fetch requested | CustomerId: {Id} | Provider: {DataStore}", id, _dataStoreType);
         try
         {
             // Try cache first
             var cachedCustomer = await _cache.GetCustomerAsync(id);
             if (cachedCustomer != null)
             {
-                _logger.LogDebug("Customer {Id} found in cache", id);
+                _logger.LogInformation(EventIds.CustomerServedCache, "Customer served from cache | CustomerId: {Id} | Provider: {DataStore}", id, _dataStoreType);
                 return Ok(cachedCustomer);
             }
             
@@ -48,7 +62,7 @@ public class DataController : ControllerBase
             
             // Cache the result
             await _cache.SetCustomerAsync(customer);
-            _logger.LogDebug("Customer {Id} retrieved from {DataStore} and cached", id, _dataStoreType);
+            _logger.LogInformation(EventIds.CustomerServedDb, "Customer served from database | CustomerId: {Id} | Provider: {DataStore}", id, _dataStoreType);
                 
             return Ok(customer);
         }
@@ -65,14 +79,14 @@ public class DataController : ControllerBase
     [HttpGet("email/{email}")]
     public async Task<IActionResult> GetCustomerByEmail(string email)
     {
-        _logger.LogDebug("Getting customer with email: {Email} using {DataStore}", email, _dataStoreType);
+        _logger.LogInformation(EventIds.CustomerFetchEmailRequest, "Customer fetch by email requested | Email: {Email} | Provider: {DataStore}", email, _dataStoreType);
         try
         {
             // Try cache first
             var cachedCustomer = await _cache.GetCustomerByEmailAsync(email);
             if (cachedCustomer != null)
             {
-                _logger.LogDebug("Customer with email {Email} found in cache", email);
+                _logger.LogInformation(EventIds.CustomerServedCacheEmail, "Customer served from cache by email | Email: {Email} | Provider: {DataStore}", email, _dataStoreType);
                 return Ok(cachedCustomer);
             }
             
@@ -84,7 +98,7 @@ public class DataController : ControllerBase
             
             // Cache the result
             await _cache.SetCustomerAsync(customer);
-            _logger.LogDebug("Customer with email {Email} retrieved from {DataStore} and cached", email, _dataStoreType);
+            _logger.LogInformation(EventIds.CustomerServedDbEmail, "Customer served from database by email | Email: {Email} | Provider: {DataStore}", email, _dataStoreType);
                 
             return Ok(customer);
         }
@@ -119,14 +133,14 @@ public class DataController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAllCustomers()
     {
-        _logger.LogDebug("Getting all customers using {DataStore}", _dataStoreType);
+        _logger.LogInformation(EventIds.CustomerFetchAllRequest, "All customers fetch requested | Provider: {DataStore}", _dataStoreType);
         try
         {
             // Try cache first
             var cachedCustomers = await _cache.GetAllCustomersAsync();
             if (cachedCustomers != null)
             {
-                _logger.LogDebug("All customers found in cache");
+                _logger.LogInformation(EventIds.CustomerServedAllCache, "All customers served from cache | Provider: {DataStore}", _dataStoreType);
                 return Ok(cachedCustomers);
             }
             
@@ -135,7 +149,7 @@ public class DataController : ControllerBase
             
             // Cache the result
             await _cache.SetAllCustomersAsync(customers);
-            _logger.LogDebug("All customers retrieved from {DataStore} and cached", _dataStoreType);
+            _logger.LogInformation(EventIds.CustomerServedAllDb, "All customers served from database | Provider: {DataStore}", _dataStoreType);
             
             return Ok(customers);
         }

@@ -11,7 +11,7 @@ export const options = {
     'http_req_duration{expected_response:true}': ['p(95) <500'],
   },
   scenarios: {
-    customer_creation: {
+    load_test: {
       executor: 'ramping-vus',
       stages: [
         {{- range .Values.scripts.load.scenarios.stages }}

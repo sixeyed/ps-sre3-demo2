@@ -18,7 +18,7 @@
 
 param(
     [string]$ReleaseName = "reliability-demo",
-    [string]$Namespace = "sre3-m1",
+    [string]$Namespace = "sre3-m1"
 )
 
 # Set error action preference
@@ -28,7 +28,7 @@ Write-Host "🔄 Resetting customer database..." -ForegroundColor Yellow
 
 try {
     # Get the SQL Server pod name
-    $podName = kubectl get pods -n $Namespace -l "app.kubernetes.io/name=sqlserver,app.kubernetes.io/instance=$ReleaseName" -o jsonpath="{.items[0].metadata.name}" 2>$null
+    $podName = kubectl get pods -n $Namespace -l "app.kubernetes.io/component=sqlserver,app.kubernetes.io/name=$ReleaseName" -o jsonpath="{.items[0].metadata.name}" 2>$null
     
     if (-not $podName) {
         Write-Error "❌ Could not find SQL Server pod for release '$ReleaseName' in namespace '$Namespace'"
@@ -54,7 +54,7 @@ END
     Write-Host "🗃️  Truncating Customers table..." -ForegroundColor Blue
     
     # Execute the SQL command via kubectl exec
-    $result = kubectl exec -n $Namespace $podName -- /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P 'YourStrong@Passw0rd' -Q $sqlCommand
+    $result = kubectl exec -n $Namespace $podName -- /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P 'YourStrong@Passw0rd' -C -Q $sqlCommand
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Database reset completed successfully!" -ForegroundColor Green

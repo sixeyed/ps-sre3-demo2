@@ -331,7 +331,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "Loki"
+        "uid": "P8E80F9AEF21F6940"
       },
       "fieldConfig": {
         "defaults": {
@@ -437,7 +437,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 14,
         "x": 0,
         "y": 7
       },
@@ -472,7 +472,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(rate({namespace=\"sre3-m1\", app=\"reliability-demo\"} |= \"connection\" |= \"fail\" [1m]))",
+          "expr": "sum(rate({namespace=\"sre3-m1\", app=\"reliability-demo\"} |= \"failure\" [1m]))",
           "legendFormat": "Connection Failure",
           "queryType": "",
           "refId": "B"
@@ -483,8 +483,8 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(rate({namespace=\"sre3-m1\", app=\"reliability-demo\"} |= \"slow\" [1m]))",
-          "legendFormat": "Slow Response",
+          "expr": "sum(rate({namespace=\"sre3-m1\", app=\"reliability-demo\"} |= \"load\" [1m]))",
+          "legendFormat": "Induced Delay",
           "queryType": "",
           "refId": "C"
         }
@@ -497,9 +497,262 @@
         "type": "loki",
         "uid": "P8E80F9AEF21F6940"
       },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false,
+              "viz": false
+            }
+          },
+          "mappings": [],
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Connection Failure (1001)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Read Timeout (1002)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Write Timeout (1003)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Slow Response (1004)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Client Limit (1005)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cache Hit (3001)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cache Miss (3002)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "light-red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "DB Operations (2000s)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "API Requests (4000s)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "purple",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 6,
+        "x": 14,
+        "y": 7
+      },
+      "id": 10,
+      "options": {
+        "displayLabels": [
+          "name",
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json EventId | EventId = \"1001\" [$__range]))",
+          "legendFormat": "Connection Failure",
+          "queryType": "",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json EventId | EventId = \"1002\" [$__range]))",
+          "legendFormat": "Read Timeout",
+          "queryType": "",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json EventId | EventId = \"1003\" [$__range]))",
+          "legendFormat": "Write Timeout",
+          "queryType": "",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json EventId | EventId = \"1004\" [$__range]))",
+          "legendFormat": "Read Delay",
+          "queryType": "",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json EventId | EventId = \"1005\" [$__range]))",
+          "legendFormat": "Client Throttling",
+          "queryType": "",
+          "refId": "E"
+        }
+      ],
+      "title": "Reliability Event Breakdown",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 20,
         "x": 0,
         "y": 15
       },
@@ -535,10 +788,10 @@
         "uid": "P8E80F9AEF21F6940"
       },
       "gridPos": {
-        "h": 8,
-        "w": 24,
+        "h": 7,
+        "w": 20,
         "x": 0,
-        "y": 23
+        "y": 22
       },
       "id": 8,
       "options": {
@@ -572,10 +825,10 @@
         "uid": "P8E80F9AEF21F6940"
       },
       "gridPos": {
-        "h": 8,
-        "w": 24,
+        "h": 6,
+        "w": 20,
         "x": 0,
-        "y": 31
+        "y": 29
       },
       "id": 9,
       "options": {
