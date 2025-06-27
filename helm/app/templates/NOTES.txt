@@ -28,13 +28,21 @@
 
 🎯 Reliability Demo Features:
    - Configurable failure simulation (timeouts, connection failures, slow responses)
-   - SQL Server data store with concurrent client limits (currently set to {{ .Values.config.sqlServerDataStore.maxConcurrentClients }})
-   - Load testing interface
-   - Activity monitoring and logging
+   - {{ .Values.config.dataStore.provider }} data store with concurrent client limits
+   - Distributed caching ({{ .Values.config.distributedCache.enabled | ternary "enabled" "disabled" }})
+   - Message-driven architecture ({{ .Values.config.messaging.enabled | ternary "enabled" "disabled" }})
+   - Background worker processing
+   - Load testing and monitoring capabilities
 
 📊 Current Configuration:
    - Web API Replicas: {{ .Values.web.replicaCount }}
    - Worker Replicas: {{ .Values.worker.replicaCount }}
-   - Customer Operation Pattern: {{ .Values.config.customerOperation.pattern }}
-   - Redis Replicas: {{ .Values.redis.replica.replicaCount }}
+   - Data Store: {{ .Values.config.dataStore.provider }}
+   - Cache Enabled: {{ .Values.config.distributedCache.enabled }}
+   - Messaging Enabled: {{ .Values.config.messaging.enabled }}
+   - Cache TTL: {{ .Values.config.distributedCache.expirationSeconds }}s
    - Max Concurrent Clients: {{ .Values.config.sqlServerDataStore.maxConcurrentClients }}
+
+🚀 Demo Flow:
+   Phase 1: Basic deployment (cache/messaging disabled) - observe issues in logs
+   Phase 2: Enable resilience features - see improved performance
