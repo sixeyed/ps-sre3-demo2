@@ -9,4 +9,4 @@ dependencies:
   - name: redis
     version: "18.19.4"
     repository: "oci://registry-1.docker.io/bitnamicharts"
-    condition: redis.enabled
+    condition: config.distributedCache.enabled

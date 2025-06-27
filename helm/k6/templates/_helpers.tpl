@@ -66,5 +66,5 @@ Generate sequential test command
 {{- $commands = append $commands (printf "k6 run /scripts/%s" $test.script) }}
 {{- end }}
 {{- $commands = append $commands "echo '✅ All tests completed successfully!'" }}
-{{- join " && " $commands }}
+{{- join " ; " $commands }}
 {{- end }}

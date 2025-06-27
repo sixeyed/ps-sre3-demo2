@@ -39,7 +39,7 @@ public class SqlServerDataStore : IDataStore
         // Simulate read timeouts
         if (operation == "read" && ShouldFail(_failureConfig.ReadTimeoutRate))
         {
-            _logger.LogWarning("Simulating read timeout for operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.ReadTimeoutMs);
+            _logger.LogWarning("Adding delay to reduce db traffic. Operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.ReadTimeoutMs);
             await Task.Delay(_failureConfig.ReadTimeoutMs);
             throw new TimeoutException("Read operation timed out");
         }
@@ -47,7 +47,7 @@ public class SqlServerDataStore : IDataStore
         // Simulate write timeouts
         if (operation == "write" && ShouldFail(_failureConfig.WriteTimeoutRate))
         {
-            _logger.LogWarning("Simulating write timeout for operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.WriteTimeoutMs);
+            _logger.LogWarning("Adding delay to reduce db traffic. Operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.WriteTimeoutMs);
             await Task.Delay(_failureConfig.WriteTimeoutMs);
             throw new TimeoutException("Write operation timed out");
         }
@@ -55,7 +55,7 @@ public class SqlServerDataStore : IDataStore
         // Simulate slow responses
         if (ShouldFail(_failureConfig.SlowResponseRate))
         {
-            _logger.LogWarning("Simulating slow response for operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.SlowResponseDelayMs);
+            _logger.LogWarning("Adding delay to reduce db traffic. Operation: {Operation}, delay: {DelayMs}ms", operation, _failureConfig.SlowResponseDelayMs);
             await Task.Delay(_failureConfig.SlowResponseDelayMs);
         }
     }

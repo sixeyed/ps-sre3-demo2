@@ -40,9 +40,7 @@ if ($UpdateDependencies) {
 Write-Host "📦 Installing K6 test chart..." -ForegroundColor Green
 helm upgrade --install $ReleaseName . `
     --namespace $Namespace `
-    --create-namespace `
-    --wait `
-    --timeout 10m
+    --create-namespace 
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
