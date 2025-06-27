@@ -7,8 +7,8 @@ metadata:
     {{- include "k6-tests.labels" . | nindent 4 }}
 data:
   customer-load-test.js: |
-{{ .Files.Get "scripts/customer-load-test.js" | indent 4 }}
+{{ tpl (.Files.Get "scripts/customer-load-test.js") . | indent 4 }}
   customer-spike-test.js: |
-{{ .Files.Get "scripts/customer-spike-test.js" | indent 4 }}
+{{ tpl (.Files.Get "scripts/customer-spike-test.js") . | indent 4 }}
   customer-soak-test.js: |
-{{ .Files.Get "scripts/customer-soak-test.js" | indent 4 }}
+{{ tpl (.Files.Get "scripts/customer-soak-test.js") . | indent 4 }}

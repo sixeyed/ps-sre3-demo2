@@ -186,7 +186,9 @@ public class SqlServerDataStore : IDataStore
         try
         {
             await Task.Delay(200); // Simulate full table scan
-            return await _context.Customers.OrderBy(c => c.Id).ToListAsync();
+            var customers = await _context.Customers.OrderBy(c => c.Id).ToListAsync();
+            _logger.LogInformation("Fetched all customers, count: {CustomerCount}", customers.Count);
+            return customers;    
         }
         finally
         {

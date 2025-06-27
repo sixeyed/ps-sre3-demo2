@@ -1,11 +1,12 @@
 #!/usr/bin/env pwsh
 
 # Install script for Reliability Demo Helm chart
-# Usage: ./install.ps1 [ReleaseName] [Namespace]
+# Usage: ./install.ps1 [ReleaseName] [Namespace] [Pattern]
 
 param(
     [string]$ReleaseName = "reliability-demo",
     [string]$Namespace = "sre3-m1",
+    [string]$Pattern = "Direct",  # "Direct" or "Async"
     [switch]$UpdateDependencies = $false
 )
 
@@ -15,6 +16,7 @@ Push-Location $PSScriptRoot
 Write-Host "Installing Reliability Demo Helm chart..." -ForegroundColor Blue
 Write-Host "Release: $ReleaseName" -ForegroundColor Yellow
 Write-Host "Namespace: $Namespace" -ForegroundColor Yellow
+Write-Host "Pattern: $Pattern" -ForegroundColor Yellow
 Write-Host ""
 
 # Update Helm dependencies if requested
@@ -35,7 +37,8 @@ helm upgrade --install $ReleaseName . `
   --namespace $Namespace `
   --create-namespace `
   --wait `
-  --timeout=600s
+  --timeout=600s `
+  --set config.customerOperation.pattern=$Pattern
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""

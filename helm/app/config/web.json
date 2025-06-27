@@ -1,5 +1,6 @@
 {
   "FailureConfig": {
+    "Enabled": {{ .Values.config.failureConfig.enabled | quote }},
     "ConnectionFailureRate": {{ .Values.config.failureConfig.connectionFailureRate | float64 }},
     "ReadTimeoutRate": {{ .Values.config.failureConfig.readTimeoutRate | float64 }},
     "WriteTimeoutRate": {{ .Values.config.failureConfig.writeTimeoutRate | float64 }},

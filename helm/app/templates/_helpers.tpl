@@ -80,3 +80,14 @@ SQL Server connection string
 Server=localhost;Database=ReliabilityDemo;Trusted_Connection=true;
 {{- end -}}
 {{- end }}
+
+{{/*
+Determine if Redis should be enabled based on the pattern
+*/}}
+{{- define "reliability-demo.redisEnabled" -}}
+{{- if eq .Values.config.customerOperation.pattern "Async" -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end }}

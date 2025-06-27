@@ -36,6 +36,7 @@ worker:
 # Application configuration
 config:
   failureConfig:
+    enabled: true
     connectionFailureRate: 0.1
     readTimeoutRate: 0.5
     writeTimeoutRate: 0.3
@@ -59,8 +60,10 @@ config:
     retryDelayMs: 1000
 
 # Redis dependency configuration (Bitnami chart)
+# Only needed for caching and messaging when using Async pattern
+# The enabled value is automatically set by templates/redis-config.yaml based on customerOperation.pattern
 redis:
-  enabled: true
+  enabled: false  # Overridden by template logic based on pattern
   auth:
     enabled: false
   master:

@@ -526,7 +526,7 @@
           "refId": "A"
         }
       ],
-      "title": "Recent Error Logs",
+      "title": "Latest Error Logs",
       "type": "logs"
     },
     {
@@ -563,7 +563,44 @@
           "refId": "A"
         }
       ],
-      "title": "Recent Error and Warning Logs",
+      "title": "Latest Warning Logs",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "P8E80F9AEF21F6940"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 31
+      },
+      "id": 9,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "Loki"
+          },
+          "editorMode": "builder",
+          "expr": "{namespace=\"sre3-m1\", app=\"reliability-demo\"} | json LogLevel | LogLevel = `Information`",
+          "queryType": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Latest Information Logs",
       "type": "logs"
     }
   ],
