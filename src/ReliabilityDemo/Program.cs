@@ -1,5 +1,6 @@
 using ReliabilityDemo.DataStore;
 using ReliabilityDemo.DataStore.Services;
+using ReliabilityDemo.DataStore.Models;
 using ReliabilityDemo.Models;
 using ReliabilityDemo.Services;
 using ReliabilityDemo.Messaging;
@@ -33,7 +34,7 @@ if (!builder.Services.Any(s => s.ServiceType == typeof(IConnectionMultiplexer)))
         return ConnectionMultiplexer.Connect(cacheRedisConnectionString);
     });
 }
-builder.Services.AddSingleton<IDistributedCache, RedisDistributedCache>();
+builder.Services.AddSingleton<ReliabilityDemo.DataStore.Services.IDistributedCache, ReliabilityDemo.DataStore.Services.RedisDistributedCache>();
 
 // Add messaging services (always uses Redis for pub/sub)
 builder.Services.AddSingleton<IMessagePublisher, RedisMessagePublisher>();

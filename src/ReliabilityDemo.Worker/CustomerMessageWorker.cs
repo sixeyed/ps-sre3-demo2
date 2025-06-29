@@ -103,8 +103,13 @@ public class CustomerMessageWorker : BackgroundService
             
             using var scope = _serviceProvider.CreateScope();
             var dataStore = scope.ServiceProvider.GetRequiredService<IDataStore>();
+            var cache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
             
-            await ProcessWithRetry(async () => await dataStore.CreateCustomerAsync(message.Customer), message.MessageId, "Create");
+            var createdCustomer = await ProcessWithRetry(async () => await dataStore.CreateCustomerAsync(message.Customer), message.MessageId, "Create");
+            
+            // Invalidate cache after successful database update
+            await cache.InvalidateAllCustomersAsync();
+            _logger.LogDebug("Invalidated cache after creating customer {CustomerId}", createdCustomer?.Id);
             
             _logger.LogDebug("Successfully processed create customer message {MessageId}", message.MessageId);
         }
@@ -135,8 +140,15 @@ public class CustomerMessageWorker : BackgroundService
             
             using var scope = _serviceProvider.CreateScope();
             var dataStore = scope.ServiceProvider.GetRequiredService<IDataStore>();
+            var cache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
             
-            await ProcessWithRetry(async () => await dataStore.UpdateCustomerAsync(message.Customer), message.MessageId, "Update");
+            var updatedCustomer = await ProcessWithRetry(async () => await dataStore.UpdateCustomerAsync(message.Customer), message.MessageId, "Update");
+            
+            // Invalidate cache after successful database update
+            await cache.InvalidateCustomerAsync(message.Customer.Id);
+            await cache.InvalidateCustomerByEmailAsync(updatedCustomer?.Email ?? message.Customer.Email);
+            await cache.InvalidateAllCustomersAsync();
+            _logger.LogDebug("Invalidated cache after updating customer {CustomerId}", message.Customer.Id);
             
             _logger.LogDebug("Successfully processed update customer message {MessageId}", message.MessageId);
         }
@@ -167,6 +179,7 @@ public class CustomerMessageWorker : BackgroundService
             
             using var scope = _serviceProvider.CreateScope();
             var dataStore = scope.ServiceProvider.GetRequiredService<IDataStore>();
+            var cache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
             
             await ProcessWithRetry(async () => 
             {
@@ -178,6 +191,11 @@ public class CustomerMessageWorker : BackgroundService
                 }
             }, message.MessageId, "Delete");
             
+            // Invalidate cache after successful database update
+            await cache.InvalidateCustomerAsync(message.CustomerId);
+            await cache.InvalidateAllCustomersAsync();
+            _logger.LogDebug("Invalidated cache after deleting customer {CustomerId}", message.CustomerId);
+            
             _logger.LogDebug("Successfully processed delete customer message {MessageId}", message.MessageId);
         }
         catch (JsonException ex)
@@ -188,6 +206,42 @@ public class CustomerMessageWorker : BackgroundService
         {
             _logger.LogError(ex, "Failed to process delete customer message {MessageId}", message?.MessageId ?? "unknown");
         }
+    }
+    
+    private async Task<T> ProcessWithRetry<T>(Func<Task<T>> operation, string messageId, string operationType)
+    {
+        var attempt = 0;
+        
+        while (attempt < _config.RetryAttempts)
+        {
+            try
+            {
+                return await operation();
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException ex) when (ex.InnerException?.Message?.Contains("duplicate key") == true)
+            {
+                // Duplicate key errors are not transient - don't retry
+                _logger.LogWarning("Duplicate key error for {OperationType} message {MessageId} - skipping retry: {Error}", 
+                    operationType, messageId, ex.InnerException?.Message);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                attempt++;
+                _logger.LogWarning(ex, "Attempt {Attempt}/{MaxAttempts} failed for {OperationType} message {MessageId}", 
+                    attempt, _config.RetryAttempts, operationType, messageId);
+                
+                if (attempt >= _config.RetryAttempts)
+                {
+                    _logger.LogError(ex, "All retry attempts failed for {OperationType} message {MessageId}", operationType, messageId);
+                    throw;
+                }
+                
+                await Task.Delay(_config.RetryDelayMs * attempt); // Exponential backoff
+            }
+        }
+        
+        throw new InvalidOperationException("Should not reach here");
     }
     
     private async Task ProcessWithRetry(Func<Task> operation, string messageId, string operationType)

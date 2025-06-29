@@ -8,16 +8,13 @@ namespace ReliabilityDemo.Services;
 public class AsyncCustomerService : ICustomerOperationService
 {
     private readonly IMessagePublisher _messagePublisher;
-    private readonly IDistributedCache _cache;
     private readonly ILogger<AsyncCustomerService> _logger;
 
     public AsyncCustomerService(
         IMessagePublisher messagePublisher,
-        IDistributedCache cache,
         ILogger<AsyncCustomerService> logger)
     {
         _messagePublisher = messagePublisher;
-        _cache = cache;
         _logger = logger;
     }
 
@@ -49,9 +46,7 @@ public class AsyncCustomerService : ICustomerOperationService
 
             await _messagePublisher.PublishCreateCustomerAsync(message);
 
-            // Invalidate cache since data will change
-            await _cache.InvalidateAllCustomersAsync();
-            _logger.LogDebug("Published create message {MessageId} for customer {Name} and invalidated cache", 
+            _logger.LogDebug("Published create message {MessageId} for customer {Name}", 
                 message.MessageId, customer.Name);
 
             return new AcceptedResult("/api/customers", new { 
@@ -100,10 +95,7 @@ public class AsyncCustomerService : ICustomerOperationService
 
             await _messagePublisher.PublishUpdateCustomerAsync(message);
 
-            // Invalidate cache since data will change
-            await _cache.InvalidateCustomerAsync(id);
-            await _cache.InvalidateAllCustomersAsync();
-            _logger.LogDebug("Published update message {MessageId} for customer {Id} and invalidated cache", 
+            _logger.LogDebug("Published update message {MessageId} for customer {Id}", 
                 message.MessageId, id);
 
             return new AcceptedResult($"/api/customers/{id}", new { 
@@ -142,10 +134,7 @@ public class AsyncCustomerService : ICustomerOperationService
 
             await _messagePublisher.PublishDeleteCustomerAsync(message);
 
-            // Invalidate cache since data will change
-            await _cache.InvalidateCustomerAsync(id);
-            await _cache.InvalidateAllCustomersAsync();
-            _logger.LogDebug("Published delete message {MessageId} for customer {Id} and invalidated cache", 
+            _logger.LogDebug("Published delete message {MessageId} for customer {Id}", 
                 message.MessageId, id);
 
             return new AcceptedResult($"/api/customers/{id}", new { 

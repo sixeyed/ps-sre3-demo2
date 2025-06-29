@@ -24,23 +24,23 @@ helm/app/install.ps1
 
 Try app at http://localhost:8080
 
-- create first customer
-- view all - repeat to see errors
 - create customer - repeat to see errors
+- view all - repeat to see errors
 - create customer with duplicate email
 
 Check application logs:
 
 > http://localhost:3000/explore?schemaVersion=1&panes=%7B%22zwl%22:%7B%22datasource%22:%22P8E80F9AEF21F6940%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22expr%22:%22%7Bnamespace%3D%5C%22sre3-m1%5C%22%7D%20%7C%3D%20%60%60%22,%22queryType%22:%22range%22,%22datasource%22:%7B%22type%22:%22loki%22,%22uid%22:%22P8E80F9AEF21F6940%22%7D,%22editorMode%22:%22builder%22%7D%5D,%22range%22:%7B%22from%22:%22now-5m%22,%22to%22:%22now%22%7D%7D%7D&orgId=1
 
-- delete customer - not found
+- find customer by email
+- delete customer - fails
 
 Last two are dev team fixes - implementation and better error handling
 
 Reliability can be an SRE fix:
 
-- [SqlServerDataStore.cs](/src/ReliabilityDemo.DataStore/Services/SqlServerDataStore.cs) - SQL server data layer
-- [DirectCustomerService.cs](src/ReliabilityDemo/Services/DirectCustomerService.cs) - direct implementation of customer operations 
+- [SqlServerDataStore.cs](SqlServerDataStore.cs) - SQL server data layer
+- [DirectCustomerService.cs](DirectCustomerService.cs) - direct implementation of customer operations 
 
 ## Soak, Load & Spike Tests
 

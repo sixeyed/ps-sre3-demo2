@@ -1,4 +1,6 @@
 using ReliabilityDemo.DataStore;
+using ReliabilityDemo.DataStore.Services;
+using ReliabilityDemo.DataStore.Models;
 using ReliabilityDemo.Worker;
 using ReliabilityDemo.Messaging;
 using StackExchange.Redis;
@@ -15,6 +17,10 @@ builder.Configuration
 builder.Services.Configure<MessagingConfig>(
     builder.Configuration.GetSection("Messaging"));
 
+// Configure distributed cache settings
+builder.Services.Configure<DistributedCacheConfig>(
+    builder.Configuration.GetSection("DistributedCache"));
+
 // Configure Redis connection for messaging
 var redisConnectionString = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
@@ -24,6 +30,9 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 
 // Configure data store - only SQL Server now
 builder.Services.AddSqlServerDataStore(builder.Configuration);
+
+// Add distributed cache service (uses Redis for caching)
+builder.Services.AddSingleton<IDistributedCache, RedisDistributedCache>();
 
 // Add the worker service
 builder.Services.AddHostedService<CustomerMessageWorker>();

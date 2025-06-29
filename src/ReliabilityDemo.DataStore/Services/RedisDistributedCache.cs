@@ -1,10 +1,10 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ReliabilityDemo.DataStore.Models;
-using ReliabilityDemo.Models;
 using StackExchange.Redis;
 using System.Text.Json;
 
-namespace ReliabilityDemo.Services;
+namespace ReliabilityDemo.DataStore.Services;
 
 public class RedisDistributedCache : IDistributedCache
 {

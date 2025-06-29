@@ -1,6 +1,6 @@
 using ReliabilityDemo.DataStore.Models;
 
-namespace ReliabilityDemo.Services;
+namespace ReliabilityDemo.DataStore.Services;
 
 public interface IDistributedCache
 {
