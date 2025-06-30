@@ -1,0 +1,109 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: reliability-demo
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.spec.source.repoURL }}
+    targetRevision: {{ .Values.spec.source.targetRevision }}
+    path: helm/app
+    helm:
+      values: |
+        replicaCount: 6
+        
+        image:
+          repository: sixeyed/reliability-demo
+          tag: m1-01
+          pullPolicy: Always
+        
+        # Health checks for self-healing
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        # Resource limits for stability
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 250m
+            memory: 256Mi
+        
+        # Horizontal Pod Autoscaler
+        autoscaling:
+          enabled: true
+          minReplicas: 6
+          maxReplicas: 20
+          targetCPUUtilizationPercentage: 80
+          targetMemoryUtilizationPercentage: 80
+        
+        # Pod disruption budget for availability
+        podDisruptionBudget:
+          enabled: true
+          minAvailable: 50%
+        
+        # Anti-affinity for spreading pods
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values:
+                    - reliability-demo
+                topologyKey: kubernetes.io/hostname
+        
+        config:
+          dataStore:
+            provider: Redis
+          redisDataStore:
+            maxConcurrentClients: 5
+          distributedCache:
+            enabled: true
+            expirationSeconds: 300
+          messaging:
+            enabled: true
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: reliability-demo
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  
+  revisionHistoryLimit: 10

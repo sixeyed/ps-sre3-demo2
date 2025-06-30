@@ -1,0 +1,18 @@
+{{- if .Values.web.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "reliability-demo.fullname" . }}
+  labels:
+    {{- include "reliability-demo.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.web.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.web.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if .Values.web.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.web.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "reliability-demo.selectorLabels" . | nindent 6 }}
+{{- end }}

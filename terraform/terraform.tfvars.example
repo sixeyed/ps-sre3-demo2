@@ -1,0 +1,29 @@
+# Azure Configuration
+resource_group_name = "reliability-demo-rg"
+location            = "eastus"
+
+# AKS Configuration
+cluster_name       = "reliability-demo-aks"
+kubernetes_version = "1.28.3"
+
+# Node Pool Configuration
+node_count     = 3
+node_vm_size   = "Standard_D2s_v3"
+node_disk_size = 100
+
+# Auto Scaling
+enable_auto_scaling = true
+min_node_count      = 3
+max_node_count      = 10
+
+# GitOps Configuration
+git_repo_url        = "https://github.com/your-org/reliability-demo-config"
+git_target_revision = "main"
+
+# Tags
+tags = {
+  Environment = "Production"
+  ManagedBy   = "Terraform"
+  Project     = "ReliabilityDemo"
+  CostCenter  = "Engineering"
+}

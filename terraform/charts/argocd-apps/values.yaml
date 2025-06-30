@@ -1,0 +1,4 @@
+spec:
+  source:
+    repoURL: https://github.com/your-org/reliability-demo-config
+    targetRevision: main

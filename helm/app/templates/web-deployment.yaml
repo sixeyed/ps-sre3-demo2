@@ -31,22 +31,14 @@ spec:
             - name: config-volume
               mountPath: /app/config
               readOnly: true
+          {{- if .Values.web.livenessProbe }}
           livenessProbe:
-            httpGet:
-              path: /api/health
-              port: http
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            {{- toYaml .Values.web.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.web.readinessProbe }}
           readinessProbe:
-            httpGet:
-              path: /api/health
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 3
-            failureThreshold: 3
+            {{- toYaml .Values.web.readinessProbe | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.web.resources | nindent 12 }}
       volumes:
