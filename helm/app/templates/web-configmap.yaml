@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "reliability-demo.fullname" . }}-web-config
+  labels:
+    {{- include "reliability-demo.labels" . | nindent 4 }}
+data:
+  logging.json: |
+{{ tpl (.Files.Get "config/web-logging.json") . | indent 4 }}
+  shared.json: |
+{{ tpl (.Files.Get "config/shared.json") . | indent 4 }}
+  web.json: |
+{{ tpl (.Files.Get "config/web.json") . | indent 4 }}

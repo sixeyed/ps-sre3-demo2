@@ -1,62 +1,65 @@
-using Microsoft.EntityFrameworkCore;
-using ReliabilityDemo.Data;
+using ReliabilityDemo.DataStore;
+using ReliabilityDemo.DataStore.Services;
+using ReliabilityDemo.DataStore.Models;
 using ReliabilityDemo.Models;
 using ReliabilityDemo.Services;
+using ReliabilityDemo.Messaging;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Load multiple configuration files
+builder.Configuration
+    .AddJsonFile("config/logging.json", optional: true, reloadOnChange: true)
+    .AddJsonFile("config/shared.json", optional: true, reloadOnChange: true)
+    .AddJsonFile("config/web.json", optional: true, reloadOnChange: true);
+
 // Configure from appsettings
-builder.Services.Configure<FailureConfig>(
-    builder.Configuration.GetSection("FailureConfig"));
-builder.Services.Configure<DataStoreConfig>(
-    builder.Configuration.GetSection("DataStore"));
-builder.Services.Configure<RedisDataStoreConfig>(
-    builder.Configuration.GetSection("RedisDataStore"));
-builder.Services.Configure<SqlServerDataStoreConfig>(
-    builder.Configuration.GetSection("SqlServerDataStore"));
+builder.Services.Configure<DistributedCacheConfig>(
+    builder.Configuration.GetSection("DistributedCache"));
+builder.Services.Configure<MessagingConfig>(
+    builder.Configuration.GetSection("Messaging"));
+builder.Services.Configure<CustomerOperationConfig>(
+    builder.Configuration.GetSection("CustomerOperation"));
 
-// Configure data store based on provider
-var dataStoreProvider = builder.Configuration.GetSection("DataStore")["Provider"] ?? "Redis";
+// Configure data store - only SQL Server now
+builder.Services.AddSqlServerDataStore(builder.Configuration);
 
-if (dataStoreProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+// Add distributed cache service (always uses Redis for caching)
+var cacheRedisConnectionString = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+if (!builder.Services.Any(s => s.ServiceType == typeof(IConnectionMultiplexer)))
 {
-    // Add SQL Server
-    var sqlConnectionString = builder.Configuration.GetConnectionString("SqlServer") ?? "Server=(localdb)\\mssqllocaldb;Database=ReliabilityDemo;Trusted_Connection=true;";
-    builder.Services.AddDbContext<ReliabilityDemoContext>(options =>
-        options.UseSqlServer(sqlConnectionString));
-    builder.Services.AddScoped<IDataStore, SqlServerDataStore>();
+    builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+    {
+        return ConnectionMultiplexer.Connect(cacheRedisConnectionString);
+    });
+}
+builder.Services.AddSingleton<ReliabilityDemo.DataStore.Services.IDistributedCache, ReliabilityDemo.DataStore.Services.RedisDistributedCache>();
+
+// Add messaging services (always uses Redis for pub/sub)
+builder.Services.AddSingleton<IMessagePublisher, RedisMessagePublisher>();
+
+// Configure customer operation service based on pattern
+var customerOperationPattern = builder.Configuration.GetSection("CustomerOperation")["Pattern"] ?? "Direct";
+
+if (customerOperationPattern.Equals("Async", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddScoped<ICustomerOperationService, AsyncCustomerService>();
 }
 else
 {
-    // Add Redis (default)
-    var redisConnectionString = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
-    builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-    {
-        return ConnectionMultiplexer.Connect(redisConnectionString);
-    });
-    builder.Services.AddSingleton<IDataStore, RedisDataStore>();
+    builder.Services.AddScoped<ICustomerOperationService, DirectCustomerService>();
 }
 
 // Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSingleton<FailureSimulator>();
 
 var app = builder.Build();
 
-// Auto-migrate SQL Server database if configured
-if (dataStoreProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
-{
-    var sqlServerConfig = builder.Configuration.GetSection("SqlServerDataStore").Get<SqlServerDataStoreConfig>() ?? new SqlServerDataStoreConfig();
-    if (sqlServerConfig.AutoMigrate)
-    {
-        using var scope = app.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReliabilityDemoContext>();
-        context.Database.EnsureCreated();
-    }
-}
+// Auto-migrate SQL Server database
+await app.Services.EnsureDatabaseCreatedAsync(builder.Configuration);
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

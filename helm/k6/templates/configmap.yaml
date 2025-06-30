@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-customer-test-scripts
+  namespace: k6
+  labels:
+    {{- include "k6-tests.labels" . | nindent 4 }}
+data:
+  customer-load-test.js: |
+{{ tpl (.Files.Get "scripts/customer-load-test.js") . | indent 4 }}
+  customer-spike-test.js: |
+{{ tpl (.Files.Get "scripts/customer-spike-test.js") . | indent 4 }}
+  customer-soak-test.js: |
+{{ tpl (.Files.Get "scripts/customer-soak-test.js") . | indent 4 }}

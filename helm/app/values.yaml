@@ -1,0 +1,88 @@
+# Reliability Demo application configuration
+
+# Web API configuration
+web:
+  replicaCount: 6
+  image:
+    repository: sixeyed/reliability-demo
+    tag: "m1-01"
+    pullPolicy: Always
+  service:
+    type: LoadBalancer
+    port: 8080
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Worker configuration
+worker:
+  replicaCount: 2
+  image:
+    repository: sixeyed/reliability-demo-worker
+    tag: "m1-01"
+    pullPolicy: Always
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+# Application configuration
+config:
+  failureConfig:
+    enabled: true
+    connectionFailureRate: 0.1
+    readTimeoutRate: 0.5
+    writeTimeoutRate: 0.3
+    slowResponseRate: 0.1
+    readTimeoutMs: 1000
+    writeTimeoutMs: 1000
+    slowResponseDelayMs: 3000
+  sqlServerDataStore:
+    maxConcurrentClients: 2
+    autoMigrate: true
+  distributedCache:
+    enabled: false
+    expirationSeconds: 300
+  customerOperation:
+    pattern: "Direct"  # "Direct" or "Async"
+  messaging:
+    createCustomerQueueName: "customer_create_queue"
+    updateCustomerQueueName: "customer_update_queue"
+    deleteCustomerQueueName: "customer_delete_queue"
+    retryAttempts: 3
+    retryDelayMs: 1000
+
+# Redis dependency configuration (Bitnami chart)
+# Only needed for caching and messaging when using Async pattern
+# The enabled value is automatically set by templates/redis-config.yaml based on customerOperation.pattern
+redis:
+  enabled: false  # Overridden by template logic based on pattern
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
+  replica:
+    replicaCount: 2
+    persistence:
+      enabled: false
+
+# SQL Server configuration
+sqlserver:
+  enabled: true
+  image:
+    repository: mcr.microsoft.com/mssql/server
+    tag: 2022-latest
+  auth:
+    saPassword: "YourStrong@Passw0rd"
+  persistence:
+    enabled: true
+    size: 2Gi

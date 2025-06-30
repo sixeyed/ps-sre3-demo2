@@ -1,0 +1,45 @@
+1. Get the application URL by running these commands:
+{{- if contains "NodePort" .Values.web.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "reliability-demo.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.web.service.type }}
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+           You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "reliability-demo.fullname" . }}'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "reliability-demo.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.web.service.port }}
+{{- else if contains "ClusterIP" .Values.web.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "{{ include "reliability-demo.selectorLabels" . }}" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+{{- end }}
+
+2. Check the status of your deployment:
+   kubectl get pods -l "{{ include "reliability-demo.selectorLabels" . }}"
+
+3. View application logs:
+   kubectl logs -f deployment/{{ include "reliability-demo.fullname" . }}
+
+4. Scale your deployment:
+   helm upgrade {{ .Release.Name }} . --set web.replicaCount=10
+
+5. Access the web interface to configure failure rates and test reliability scenarios.
+
+🎯 Reliability Demo Features:
+   - Configurable failure simulation (timeouts, connection failures, slow responses)
+   - Distributed caching ({{ .Values.config.distributedCache.enabled | ternary "enabled" "disabled" }})
+   - Message-driven architecture with background worker processing
+   - Load testing and monitoring capabilities
+
+📊 Current Configuration:
+   - Web API Replicas: {{ .Values.web.replicaCount }}
+   - Worker Replicas: {{ .Values.worker.replicaCount }}
+   - Cache Enabled: {{ .Values.config.distributedCache.enabled }}
+   - Data Operations Pattern: {{ .Values.config.customerOperation.pattern }}
+   - Cache TTL: {{ .Values.config.distributedCache.expirationSeconds }}s
+   - Max Concurrent Clients: {{ .Values.config.sqlServerDataStore.maxConcurrentClients }}
+
+🚀 Demo Flow:
+   Phase 1: Basic deployment (cache/messaging disabled) - observe issues in logs
+   Phase 2: Enable resilience features - see improved performance

@@ -240,6 +240,25 @@
             width: 300px;
             display: none;
         }
+        
+        .config-info {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .config-info p {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 0.9em;
+        }
+        
+        .slider-container input[type="range"]:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
 
         .demo-panel.active {
             display: block;
@@ -326,17 +345,20 @@
     <div class="header">
         <h1>Customer Data Portal</h1>
         <div class="demo-controls">
+            <button class="demo-toggle" onclick="resetDatabase()" style="background: #f39c12; margin-right: 10px;">Reset Database</button>
             <button class="demo-toggle" onclick="toggleDemoPanel()">Demo Controls</button>
-            <a href="/technical.html" target="_blank">Technical View</a>
         </div>
     </div>
 
     <div class="demo-panel" id="demoPanel">
-        <h3>Failure Simulation</h3>
+        <h3>Failure Simulation (Read-Only)</h3>
+        <div class="config-info">
+            <p><em>Configuration is managed via Helm values or appsettings.json</em></p>
+        </div>
         <div class="slider-group">
             <label>Connection Failures:</label>
             <div class="slider-container">
-                <input type="range" id="connectionFailureRate" min="0" max="1" step="0.01" value="0">
+                <input type="range" id="connectionFailureRate" min="0" max="1" step="0.01" value="0" disabled>
                 <span class="slider-value" id="connectionFailureValue">0%</span>
             </div>
         </div>
@@ -344,7 +366,7 @@
         <div class="slider-group">
             <label>Read Timeouts:</label>
             <div class="slider-container">
-                <input type="range" id="readTimeoutRate" min="0" max="1" step="0.01" value="0">
+                <input type="range" id="readTimeoutRate" min="0" max="1" step="0.01" value="0" disabled>
                 <span class="slider-value" id="readTimeoutValue">0%</span>
             </div>
         </div>
@@ -352,7 +374,7 @@
         <div class="slider-group">
             <label>Write Timeouts:</label>
             <div class="slider-container">
-                <input type="range" id="writeTimeoutRate" min="0" max="1" step="0.01" value="0">
+                <input type="range" id="writeTimeoutRate" min="0" max="1" step="0.01" value="0" disabled>
                 <span class="slider-value" id="writeTimeoutValue">0%</span>
             </div>
         </div>
@@ -360,13 +382,10 @@
         <div class="slider-group">
             <label>Slow Responses:</label>
             <div class="slider-container">
-                <input type="range" id="slowResponseRate" min="0" max="1" step="0.01" value="0">
+                <input type="range" id="slowResponseRate" min="0" max="1" step="0.01" value="0" disabled>
                 <span class="slider-value" id="slowResponseValue">0%</span>
             </div>
         </div>
-        
-        <button class="btn" onclick="updateFailureConfig()">Apply Changes</button>
-        <button class="btn danger" onclick="resetFailureConfig()">Reset</button>
     </div>
 
     <div class="main-container">
@@ -374,22 +393,22 @@
             <h2>Add New Customer</h2>
             <div class="form-group">
                 <label for="customerName">Name *</label>
-                <input type="text" id="customerName" placeholder="Enter customer name" value="John Doe">
+                <input type="text" id="customerName" placeholder="Enter customer name">
             </div>
             
             <div class="form-group">
                 <label for="customerEmail">Email *</label>
-                <input type="email" id="customerEmail" placeholder="Enter email address" value="john@example.com">
+                <input type="email" id="customerEmail" placeholder="Enter email address">
             </div>
             
             <div class="form-group">
                 <label for="customerPhone">Phone</label>
-                <input type="tel" id="customerPhone" placeholder="Enter phone number" value="+1-555-0123">
+                <input type="tel" id="customerPhone" placeholder="Enter phone number">
             </div>
             
             <div class="form-group">
                 <label for="customerAddress">Address</label>
-                <textarea id="customerAddress" rows="3" placeholder="Enter customer address">123 Main St, Anytown, USA</textarea>
+                <textarea id="customerAddress" rows="3" placeholder="Enter customer address"></textarea>
             </div>
             
             <button class="btn success" onclick="createCustomer()">
@@ -406,10 +425,18 @@
                 <label for="lookupId">Customer ID</label>
                 <input type="number" id="lookupId" placeholder="Enter customer ID" value="1" min="1">
             </div>
+            <div class="form-group">
+                <label for="lookupEmail">Customer Email</label>
+                <input type="email" id="lookupEmail" placeholder="Enter customer email">
+            </div>
             
             <button class="btn" onclick="lookupCustomer()">
                 <span id="lookupLoading" class="loading" style="display: none;"></span>
-                Find Customer
+                Find by ID
+            </button>
+            <button class="btn" onclick="lookupCustomerByEmail()">
+                <span id="lookupEmailLoading" class="loading" style="display: none;"></span>
+                Find by Email
             </button>
             <button class="btn" onclick="viewAllCustomers()">
                 <span id="viewAllLoading" class="loading" style="display: none;"></span>
@@ -436,7 +463,38 @@
             initializeSliders();
             loadFailureConfig();
             refreshCustomerTable();
+            generateRandomCustomerData();
         });
+
+        function generateRandomCustomerData() {
+            const firstNames = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Lisa', 'Chris', 'Emma', 'Alex', 'Maria'];
+            const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
+            const domains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'company.com'];
+            const streets = ['Main St', 'Oak Ave', 'Park Blvd', 'First St', 'Second Ave', 'Elm St', 'Maple Dr', 'Cedar Ln'];
+            const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego'];
+            const states = ['NY', 'CA', 'IL', 'TX', 'AZ', 'PA', 'FL', 'WA'];
+            
+            const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+            const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+            const domain = domains[Math.floor(Math.random() * domains.length)];
+            const street = streets[Math.floor(Math.random() * streets.length)];
+            const city = cities[Math.floor(Math.random() * cities.length)];
+            const state = states[Math.floor(Math.random() * states.length)];
+            
+            // Generate a short UUID fragment to ensure email uniqueness
+            const uuid = crypto.randomUUID();
+            const uuidFragment = uuid.substring(0, 8); // Use first 8 characters
+            
+            const name = `${firstName} ${lastName}`;
+            const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${uuidFragment}@${domain}`;
+            const phone = `+1-${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 900 + 100)}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+            const address = `${Math.floor(Math.random() * 9999 + 1)} ${street}, ${city}, ${state} ${String(Math.floor(Math.random() * 90000 + 10000))}`;
+            
+            document.getElementById('customerName').value = name;
+            document.getElementById('customerEmail').value = email;
+            document.getElementById('customerPhone').value = phone;
+            document.getElementById('customerAddress').value = address;
+        }
 
         function toggleDemoPanel() {
             const panel = document.getElementById('demoPanel');
@@ -444,9 +502,31 @@
             
             if (demoControlsVisible) {
                 panel.classList.add('active');
+                // Add click-away listener
+                setTimeout(() => {
+                    document.addEventListener('click', handleClickAway);
+                }, 100);
             } else {
                 panel.classList.remove('active');
+                document.removeEventListener('click', handleClickAway);
             }
+        }
+        
+        function handleClickAway(event) {
+            const panel = document.getElementById('demoPanel');
+            const toggleButton = document.querySelector('.demo-toggle');
+            
+            // Check if click is outside panel and not on toggle button
+            if (!panel.contains(event.target) && !toggleButton.contains(event.target)) {
+                closeDemoPanel();
+            }
+        }
+        
+        function closeDemoPanel() {
+            const panel = document.getElementById('demoPanel');
+            demoControlsVisible = false;
+            panel.classList.remove('active');
+            document.removeEventListener('click', handleClickAway);
         }
 
         function initializeSliders() {
@@ -532,6 +612,29 @@
             }
         }
 
+        async function resetDatabase() {
+            if (!confirm('Are you sure you want to reset the database? This will delete all customer data and clear the cache.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/reset', { method: 'POST' });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showAlert('createStatus', 'Database and cache reset successfully!', 'success');
+                    refreshCustomerTable();
+                    console.log('Database reset completed:', result);
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to reset database');
+                }
+            } catch (error) {
+                showAlert('createStatus', `Error resetting database: ${error.message}`, 'error');
+                console.error('Error resetting database:', error);
+            }
+        }
+
         async function createCustomer() {
             const name = document.getElementById('customerName').value.trim();
             const email = document.getElementById('customerEmail').value.trim();
@@ -564,11 +667,8 @@
                     showAlert('createStatus', `Customer created successfully with ID: ${createdCustomer.id}`, 'success');
                     refreshCustomerTable();
                     
-                    // Clear the form
-                    document.getElementById('customerName').value = '';
-                    document.getElementById('customerEmail').value = '';
-                    document.getElementById('customerPhone').value = '';
-                    document.getElementById('customerAddress').value = '';
+                    // Generate new random data for next customer
+                    generateRandomCustomerData();
                 } else {
                     const error = await response.json();
                     throw new Error(error.error || 'Failed to create customer');
@@ -638,6 +738,62 @@
                 document.getElementById('customerDetails').innerHTML = '';
             } finally {
                 showLoading('lookupLoading', false);
+            }
+        }
+
+        async function lookupCustomerByEmail() {
+            const lookupEmail = document.getElementById('lookupEmail').value.trim();
+
+            if (!lookupEmail) {
+                showAlert('lookupStatus', 'Please enter a Customer Email to lookup', 'warning');
+                return;
+            }
+
+            showLoading('lookupEmailLoading', true);
+            document.getElementById('customerDetails').innerHTML = '';
+
+            try {
+                const response = await fetch(`/api/customers/email/${encodeURIComponent(lookupEmail)}`);
+
+                if (response.ok) {
+                    const customer = await response.json();
+                    const detailsHtml = `
+                        <div class="alert success">
+                            <h4>Customer Found (Email: ${customer.email})</h4>
+                            <table class="data-table">
+                                <tr><td><strong>ID</strong></td><td>${customer.id}</td></tr>
+                                <tr><td><strong>Name</strong></td><td>${customer.name}</td></tr>
+                                <tr><td><strong>Email</strong></td><td>${customer.email}</td></tr>
+                                <tr><td><strong>Phone</strong></td><td>${customer.phone || 'Not provided'}</td></tr>
+                                <tr><td><strong>Address</strong></td><td>${customer.address || 'Not provided'}</td></tr>
+                                <tr><td><strong>Created</strong></td><td>${new Date(customer.createdAt).toLocaleString()}</td></tr>
+                                <tr><td><strong>Updated</strong></td><td>${customer.updatedAt ? new Date(customer.updatedAt).toLocaleString() : 'Never'}</td></tr>
+                            </table>
+                            <div style="margin-top: 15px;">
+                                <button class="btn danger" onclick="deleteCustomer(${customer.id})">Delete Customer</button>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('customerDetails').innerHTML = detailsHtml;
+                    showAlert('lookupStatus', `Customer with email ${lookupEmail} found`, 'success');
+                } else if (response.status === 404) {
+                    showAlert('lookupStatus', `Customer with email ${lookupEmail} not found`, 'warning');
+                    document.getElementById('customerDetails').innerHTML = '';
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to lookup customer by email');
+                }
+            } catch (error) {
+                if (error.message.includes('timeout')) {
+                    showAlert('lookupStatus', 'Request timed out - please try again', 'error');
+                } else if (error.message.includes('service unavailable')) {
+                    showAlert('lookupStatus', 'Service temporarily unavailable - please try again', 'error');
+                } else {
+                    showAlert('lookupStatus', `Error: ${error.message}`, 'error');
+                }
+                document.getElementById('customerDetails').innerHTML = '';
+            } finally {
+                showLoading('lookupEmailLoading', false);
             }
         }
 

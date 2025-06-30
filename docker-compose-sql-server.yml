@@ -1,0 +1,23 @@
+services:
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd
+      - MSSQL_PID=Developer
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+  reliability-demo:
+    environment:
+      - DataStore__Provider=SqlServer
+      - ConnectionStrings__SqlServer=Server=sqlserver;Database=ReliabilityDemo;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true;
+      - SqlServerDataStore__AutoMigrate=true
+    depends_on:
+      - sqlserver
+
+volumes:
+  sqlserver_data:

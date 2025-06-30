@@ -1,0 +1,25 @@
+apiVersion: v2
+name: lgtm-monitoring
+description: LGTM Stack (Loki, Grafana, Tempo, Mimir) for observability
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - monitoring
+  - observability
+  - loki
+  - grafana
+  - tempo
+  - mimir
+maintainers:
+  - name: SRE Team
+dependencies:
+  - name: loki
+    version: "~5.47.0"
+    repository: "https://grafana.github.io/helm-charts"
+  - name: grafana
+    version: "~7.3.0"
+    repository: "https://grafana.github.io/helm-charts"
+  - name: promtail
+    version: "~6.15.0"
+    repository: "https://grafana.github.io/helm-charts"
