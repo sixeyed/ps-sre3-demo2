@@ -39,8 +39,8 @@ Last two are dev team fixes - implementation and better error handling
 
 Reliability can be an SRE fix:
 
-- [SqlServerDataStore.cs](SqlServerDataStore.cs) - SQL server data layer
-- [DirectCustomerService.cs](DirectCustomerService.cs) - direct implementation of customer operations 
+- [SqlServerDataStore.cs](src/SqlServerDataStore.cs) - SQL server data layer
+- [DirectCustomerService.cs](src/DirectCustomerService.cs) - direct implementation of customer operations 
 
 ## Soak, Load & Spike Tests
 

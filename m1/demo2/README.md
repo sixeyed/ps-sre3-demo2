@@ -16,9 +16,9 @@ helm upgrade -n sre3-m1 reliability-demo helm/app `
 
 > Check Pods
 
-- [RedisDistributedCache.cs](/src/ReliabilityDemo/Services/RedisDistributedCache.cs) - distributed cache using Redis
-- [DataController.cs](/src/ReliabilityDemo/Controllers/DataController.cs) - API controller using the cache
-- [DirectCustomerService.cs](/src/ReliabilityDemo/Services/DirectCustomerService.cs) - service for data writes
+- [RedisDistributedCache.cs](src/RedisDistributedCache.cs) - distributed cache using Redis
+- [DataController.cs](src/DataController.cs) - API controller using the cache
+- [DirectCustomerService.cs](src/DirectCustomerService.cs) - service for data writes
 
 Manual test
 
@@ -61,11 +61,14 @@ helm upgrade -n sre3-m1 reliability-demo helm/app `
 
 > Check Pods
 
-- [RedisMessagePublisher.cs](/src/ReliabilityDemo/Services/RedisMessagePublisher.cs) - message publisher
-- [AsyncCustomerService.cs](/src/ReliabilityDemo/Services/AsyncCustomerService.cs) - customer operations using messaging
-- [CustomerMessageWorker.cs](/src/ReliabilityDemo.Worker/CustomerMessageWorker.cs) - separate worker process for updates
+- [RedisMessagePublisher.cs](src/RedisMessagePublisher.cs) - message publisher
+- [AsyncCustomerService.cs](src/AsyncCustomerService.cs) - customer operations using messaging
+- [CustomerMessageWorker.cs](src/CustomerMessageWorker.cs) - separate worker process for updates
 
-Reset database and test with new customer:
+Reset database and test:
+
+- 2x new customer
+- 2x view all
 
 > http://localhost:8080
 
