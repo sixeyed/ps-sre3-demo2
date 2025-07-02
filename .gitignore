@@ -390,3 +390,24 @@ docker-compose.override.yml
 
 # Entity Framework migrations
 Migrations/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.auto.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+crash.log
+crash.*.log
+
+# Terraform test cache
+terraform/test/.terraform-cache/
+terraform/test/test-results/

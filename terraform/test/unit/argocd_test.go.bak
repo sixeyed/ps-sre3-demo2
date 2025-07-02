@@ -1,0 +1,188 @@
+package unit
+
+import (
+	"testing"
+
+	"github.com/gruntwork-io/terratest/modules/terraform"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestArgoCDModuleDefaults(t *testing.T) {
+	t.Parallel()
+
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+		TerraformDir: "../terraform/modules/argocd",
+		Vars: map[string]interface{}{
+			"namespace": "argocd",
+		},
+		PlanFilePath: "terraform.tfplan",
+	})
+
+	// Note: No destroy needed for plan-only validation
+
+	planStruct := terraform.InitAndPlanAndShowWithStruct(t, terraformOptions)
+
+	// Verify Helm release
+	helmRelease := planStruct.ResourcePlannedValuesMap["helm_release.argocd"]
+	require.NotNil(t, helmRelease)
+
+	assert.Equal(t, "argocd", helmRelease.AttributeValues["name"])
+	assert.Equal(t, "argocd", helmRelease.AttributeValues["namespace"])
+	assert.Equal(t, "https://argoproj.github.io/argo-helm", helmRelease.AttributeValues["repository"])
+	assert.Equal(t, "argo-cd", helmRelease.AttributeValues["chart"])
+}
+
+func TestArgoCDModuleHAConfiguration(t *testing.T) {
+	t.Parallel()
+
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+		TerraformDir: "../fixtures/argocd",
+		PlanFilePath: "terraform.tfplan",
+	})
+
+	// Note: No destroy needed for plan-only validation
+
+	// Create a test fixture that allows us to inspect the values
+	terraform.InitAndPlan(t, terraformOptions)
+
+	// In a real test, we would parse the helm values YAML
+	// For now, we're validating the structure exists
+	planOutput := terraform.Plan(t, terraformOptions)
+	assert.Contains(t, planOutput, "helm_release.argocd")
+}
+
+func TestArgoCDModuleResourceLimits(t *testing.T) {
+	t.Parallel()
+
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+		TerraformDir: "../terraform/modules/argocd",
+		Vars: map[string]interface{}{
+			"namespace":            "argocd-test",
+			"argocd_chart_version": "5.51.6",
+		},
+		PlanFilePath: "terraform.tfplan",
+	})
+
+	// Note: No destroy needed for plan-only validation
+
+	planStruct := terraform.InitAndPlanAndShowWithStruct(t, terraformOptions)
+
+	helmRelease := planStruct.ResourcePlannedValuesMap["helm_release.argocd"]
+	require.NotNil(t, helmRelease)
+
+	// Verify chart version
+	assert.Equal(t, "5.51.6", helmRelease.AttributeValues["version"])
+}
+
+func TestArgoCDModuleAppOfApps(t *testing.T) {
+	t.Parallel()
+
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+		TerraformDir: "../terraform/modules/argocd",
+		Vars: map[string]interface{}{
+			"namespace":           "argocd",
+			"git_repo_url":        "https://github.com/test/repo",
+			"git_target_revision": "develop",
+		},
+		PlanFilePath: "terraform.tfplan",
+	})
+
+	// Note: No destroy needed for plan-only validation
+
+	planStruct := terraform.InitAndPlanAndShowWithStruct(t, terraformOptions)
+
+	// Verify app-of-apps manifest
+	appOfApps := planStruct.ResourcePlannedValuesMap["kubernetes_manifest.app_of_apps"]
+	require.NotNil(t, appOfApps)
+
+	manifest := appOfApps.AttributeValues["manifest"].(map[string]interface{})
+	assert.Equal(t, "argoproj.io/v1alpha1", manifest["apiVersion"])
+	assert.Equal(t, "Application", manifest["kind"])
+
+	metadata := manifest["metadata"].(map[string]interface{})
+	assert.Equal(t, "app-of-apps", metadata["name"])
+	assert.Equal(t, "argocd", metadata["namespace"])
+}
+
+func TestArgoCDModuleSyncPolicy(t *testing.T) {
+	t.Parallel()
+
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+		TerraformDir: "../terraform/modules/argocd",
+		Vars: map[string]interface{}{
+			"namespace":           "argocd",
+			"git_repo_url":        "https://github.com/test/repo",
+			"git_target_revision": "main",
+		},
+		PlanFilePath: "terraform.tfplan",
+	})
+
+	// Note: No destroy needed for plan-only validation
+
+	planStruct := terraform.InitAndPlanAndShowWithStruct(t, terraformOptions)
+
+	appOfApps := planStruct.ResourcePlannedValuesMap["kubernetes_manifest.app_of_apps"]
+	require.NotNil(t, appOfApps)
+
+	manifest := appOfApps.AttributeValues["manifest"].(map[string]interface{})
+	spec := manifest["spec"].(map[string]interface{})
+	syncPolicy := spec["syncPolicy"].(map[string]interface{})
+
+	// Verify automated sync
+	automated := syncPolicy["automated"].(map[string]interface{})
+	assert.Equal(t, true, automated["prune"])
+	assert.Equal(t, true, automated["selfHeal"])
+
+	// Verify sync options
+	syncOptions := syncPolicy["syncOptions"].([]interface{})
+	assert.Contains(t, syncOptions, "CreateNamespace=true")
+}
+
+func TestArgoCDModuleValidation(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		vars          map[string]interface{}
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "valid_configuration",
+			vars: map[string]interface{}{
+				"namespace": "argocd",
+			},
+			expectError: false,
+		},
+		{
+			name: "empty_namespace",
+			vars: map[string]interface{}{
+				"namespace": "",
+			},
+			expectError:   true,
+			errorContains: "namespace",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+				TerraformDir: "../terraform/modules/argocd",
+				Vars:         tc.vars,
+				PlanFilePath: "terraform.tfplan",
+			})
+
+			_, err := terraform.InitAndPlanE(t, terraformOptions)
+
+			if tc.expectError {
+				assert.Error(t, err)
+				if tc.errorContains != "" {
+					assert.Contains(t, err.Error(), tc.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

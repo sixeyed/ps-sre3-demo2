@@ -1,0 +1,29 @@
+# Docker ignore file for test container
+
+# Terraform state and plan files
+*.tfstate
+*.tfstate.backup
+*.tfplan
+.terraform/
+.terraform.lock.hcl
+
+# Test artifacts
+coverage.out
+coverage.html
+test-results/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Go mod cache
+go.sum.bak

@@ -1,0 +1,226 @@
+package unit
+
+import (
+	"testing"
+
+	"github.com/gruntwork-io/terratest/modules/terraform"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestAKSModuleDefaults(t *testing.T) {
+	t.Parallel()
+
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+		TerraformDir: "../terraform/modules/aks",
+		Vars: map[string]interface{}{
+			"cluster_name":        "test-cluster",
+			"resource_group_name": "test-rg",
+			"location":            "eastus",
+			"kubernetes_version":  "1.28.3",
+		},
+		PlanFilePath: "terraform.tfplan",
+	})
+
+	// Run terraform init and plan (validation only)
+	planStruct := terraform.InitAndPlanAndShowWithStruct(t, terraformOptions)
+
+	// Test default values
+	aksResource := planStruct.ResourcePlannedValuesMap["azurerm_kubernetes_cluster.main"]
+	require.NotNil(t, aksResource)
+
+	// Verify default node pool configuration
+	defaultNodePool := aksResource.AttributeValues["default_node_pool"].([]interface{})[0].(map[string]interface{})
+	assert.Equal(t, "Standard_D2s_v3", defaultNodePool["vm_size"])
+	assert.Equal(t, float64(100), defaultNodePool["os_disk_size_gb"])
+	assert.Equal(t, true, defaultNodePool["enable_auto_scaling"])
+	assert.Equal(t, float64(3), defaultNodePool["min_count"])
+	assert.Equal(t, float64(10), defaultNodePool["max_count"])
+
+	// Verify availability zones
+	zones := defaultNodePool["zones"].([]interface{})
+	assert.Len(t, zones, 3)
+	assert.Contains(t, zones, "1")
+	assert.Contains(t, zones, "2")
+	assert.Contains(t, zones, "3")
+}
+
+func TestAKSModuleCustomValues(t *testing.T) {
+	t.Parallel()
+
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+		TerraformDir: "../terraform/modules/aks",
+		Vars: map[string]interface{}{
+			"cluster_name":        "custom-cluster",
+			"resource_group_name": "custom-rg",
+			"location":            "westus2",
+			"kubernetes_version":  "1.29.0",
+			"node_vm_size":        "Standard_D4s_v3",
+			"node_disk_size":      200,
+			"enable_auto_scaling": true,
+			"min_node_count":      5,
+			"max_node_count":      20,
+			"tags": map[string]string{
+				"Environment": "Test",
+				"ManagedBy":   "Terratest",
+			},
+		},
+		PlanFilePath: "terraform.tfplan",
+	})
+
+	// Note: No destroy needed for plan-only validation
+
+	planStruct := terraform.InitAndPlanAndShowWithStruct(t, terraformOptions)
+
+	// Verify custom values
+	aksResource := planStruct.ResourcePlannedValuesMap["azurerm_kubernetes_cluster.main"]
+	require.NotNil(t, aksResource)
+
+	assert.Equal(t, "custom-cluster", aksResource.AttributeValues["name"])
+	assert.Equal(t, "westus2", aksResource.AttributeValues["location"])
+	assert.Equal(t, "1.29.0", aksResource.AttributeValues["kubernetes_version"])
+
+	// Verify tags
+	tags := aksResource.AttributeValues["tags"].(map[string]interface{})
+	assert.Equal(t, "Test", tags["Environment"])
+	assert.Equal(t, "Terratest", tags["ManagedBy"])
+}
+
+func TestAKSModuleNetworking(t *testing.T) {
+	t.Parallel()
+
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+		TerraformDir: "../terraform/modules/aks",
+		Vars: map[string]interface{}{
+			"cluster_name":        "network-test",
+			"resource_group_name": "test-rg",
+			"location":            "eastus",
+			"kubernetes_version":  "1.28.3",
+		},
+		PlanFilePath: "terraform.tfplan",
+	})
+
+	// Note: No destroy needed for plan-only validation
+
+	planStruct := terraform.InitAndPlanAndShowWithStruct(t, terraformOptions)
+
+	aksResource := planStruct.ResourcePlannedValuesMap["azurerm_kubernetes_cluster.main"]
+	require.NotNil(t, aksResource)
+
+	// Verify network profile
+	networkProfile := aksResource.AttributeValues["network_profile"].([]interface{})[0].(map[string]interface{})
+	assert.Equal(t, "azure", networkProfile["network_plugin"])
+	assert.Equal(t, "standard", networkProfile["load_balancer_sku"])
+	assert.Equal(t, "loadBalancer", networkProfile["outbound_type"])
+}
+
+func TestAKSModuleIdentity(t *testing.T) {
+	t.Parallel()
+
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+		TerraformDir: "../terraform/modules/aks",
+		Vars: map[string]interface{}{
+			"cluster_name":        "identity-test",
+			"resource_group_name": "test-rg",
+			"location":            "eastus",
+			"kubernetes_version":  "1.28.3",
+		},
+		PlanFilePath: "terraform.tfplan",
+	})
+
+	// Note: No destroy needed for plan-only validation
+
+	planStruct := terraform.InitAndPlanAndShowWithStruct(t, terraformOptions)
+
+	aksResource := planStruct.ResourcePlannedValuesMap["azurerm_kubernetes_cluster.main"]
+	require.NotNil(t, aksResource)
+
+	// Verify managed identity
+	identity := aksResource.AttributeValues["identity"].([]interface{})[0].(map[string]interface{})
+	assert.Equal(t, "SystemAssigned", identity["type"])
+}
+
+func TestAKSModuleWorkloadNodePool(t *testing.T) {
+	t.Parallel()
+
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+		TerraformDir: "../terraform/modules/aks",
+		Vars: map[string]interface{}{
+			"cluster_name":        "workload-test",
+			"resource_group_name": "test-rg",
+			"location":            "eastus",
+			"kubernetes_version":  "1.28.3",
+		},
+		PlanFilePath: "terraform.tfplan",
+	})
+
+	// Note: No destroy needed for plan-only validation
+
+	planStruct := terraform.InitAndPlanAndShowWithStruct(t, terraformOptions)
+
+	// Verify workload node pool
+	workloadPool := planStruct.ResourcePlannedValuesMap["azurerm_kubernetes_cluster_node_pool.workload"]
+	require.NotNil(t, workloadPool)
+
+	assert.Equal(t, "workload", workloadPool.AttributeValues["name"])
+	
+	// Verify node labels
+	nodeLabels := workloadPool.AttributeValues["node_labels"].(map[string]interface{})
+	assert.Equal(t, "application", nodeLabels["workload-type"])
+
+	// Verify availability zones
+	zones := workloadPool.AttributeValues["zones"].([]interface{})
+	assert.Len(t, zones, 3)
+}
+
+func TestAKSModuleValidation(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		vars          map[string]interface{}
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "missing_cluster_name",
+			vars: map[string]interface{}{
+				"resource_group_name": "test-rg",
+				"location":            "eastus",
+				"kubernetes_version":  "1.28.3",
+			},
+			expectError:   true,
+			errorContains: "cluster_name",
+		},
+		{
+			name: "invalid_location",
+			vars: map[string]interface{}{
+				"cluster_name":        "test",
+				"resource_group_name": "test-rg",
+				"location":            "",
+				"kubernetes_version":  "1.28.3",
+			},
+			expectError:   true,
+			errorContains: "location",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+				TerraformDir: "../terraform/modules/aks",
+				Vars:         tc.vars,
+				PlanFilePath: "terraform.tfplan",
+			})
+
+			_, err := terraform.InitAndPlanE(t, terraformOptions)
+
+			if tc.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errorContains)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
