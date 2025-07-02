@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reliability-demo-web
+  namespace: reliability-demo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: reliability-demo
+      component: web
+  template:
+    metadata:
+      labels:
+        app: reliability-demo
+        component: web
+    spec:
+      containers:
+      - name: web
+        image: sixeyed/reliability-demo:m1-01
+        ports:
+        - containerPort: 8080
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        volumeMounts:
+        - name: config
+          mountPath: /app/appsettings.json
+          subPath: appsettings.json
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: reliability-demo-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reliability-demo-web
+  namespace: reliability-demo
+spec:
+  type: LoadBalancer
+  selector:
+    app: reliability-demo
+    component: web
+  ports:
+  - port: 80
+    targetPort: 8080

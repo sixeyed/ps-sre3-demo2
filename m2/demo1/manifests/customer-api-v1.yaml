@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reliability-demo-web
+  namespace: reliability-demo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: reliability-demo
+      component: web
+  template:
+    metadata:
+      labels:
+        app: reliability-demo
+        component: web
+    spec:
+      containers:
+      - name: web
+        image: testregistry.azurecr.io/reliability-demo:2024-01-14-1200
+        ports:
+        - containerPort: 8080
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+        - name: ConnectionStrings__Redis
+          value: "localhost:6379"
+        - name: ConnectionStrings__SqlServer
+          value: "Server=localhost;Database=ReliabilityDemo;User Id=sa;Password=YourStrong@Passw0rd"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reliability-demo-web
+  namespace: reliability-demo
+spec:
+  selector:
+    app: reliability-demo
+    component: web
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: LoadBalancer

@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reliability-demo-config
+  namespace: reliability-demo
+data:
+  appsettings.json: |
+    {
+      "Logging": {
+        "LogLevel": {
+          "Default": "Information",
+          "Microsoft.AspNetCore": "Warning"
+        }
+      },
+      "AllowedHosts": "*",
+      "ConnectionStrings": {
+        "SqlServer": "Server=sqlserver;Database=ReliabilityDemo;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true",
+        "Redis": "redis:6379"
+      },
+      "DataStore": {
+        "Provider": "SqlServer"
+      },
+      "SqlServerDataStore": {
+        "MaxConcurrentClients": 2,
+        "AutoMigrate": true
+      },
+      "DistributedCache": {
+        "Enabled": false,
+        "ExpirationSeconds": 300
+      },
+      "Messaging": {
+        "Enabled": true,
+        "CustomerChannelName": "customer_operations",
+        "RetryAttempts": 3,
+        "RetryDelayMs": 1000
+      },
+      "FailureConfig": {
+        "Enabled": true,
+        "ConnectionFailureRate": 0.1,
+        "ReadTimeoutRate": 0.5,
+        "WriteTimeoutRate": 0.3,
+        "SlowResponseRate": 0.1,
+        "ReadTimeoutMs": 1000,
+        "WriteTimeoutMs": 1000,
+        "SlowResponseDelayMs": 3000
+      }
+    }

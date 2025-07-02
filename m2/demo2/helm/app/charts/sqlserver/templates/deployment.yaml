@@ -1,0 +1,79 @@
+{{- if .Values.sqlserver.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "reliability-demo.fullname" . }}-sqlserver
+  labels:
+    {{- include "reliability-demo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "reliability-demo.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: database
+  template:
+    metadata:
+      labels:
+        {{- include "reliability-demo.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: database
+    spec:
+      containers:
+      - name: sqlserver
+        image: "{{ .Values.sqlserver.image.repository }}:{{ .Values.sqlserver.image.tag }}"
+        ports:
+        - containerPort: 1433
+        env:
+        - name: ACCEPT_EULA
+          value: "Y"
+        - name: MSSQL_SA_PASSWORD
+          value: {{ .Values.sqlserver.auth.saPassword | quote }}
+        - name: MSSQL_PID
+          value: "Developer"
+        {{- with .Values.sqlserver.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- if .Values.sqlserver.persistence.enabled }}
+        volumeMounts:
+        - name: sqlserver-data
+          mountPath: /var/opt/mssql
+        {{- end }}
+      {{- if .Values.sqlserver.persistence.enabled }}
+      volumes:
+      - name: sqlserver-data
+        persistentVolumeClaim:
+          claimName: {{ include "reliability-demo.fullname" . }}-sqlserver
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "reliability-demo.fullname" . }}-sqlserver
+  labels:
+    {{- include "reliability-demo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  selector:
+    {{- include "reliability-demo.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+  ports:
+  - port: 1433
+    targetPort: 1433
+{{- if .Values.sqlserver.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "reliability-demo.fullname" . }}-sqlserver
+  labels:
+    {{- include "reliability-demo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.sqlserver.persistence.size }}
+{{- end }}
+{{- end }}

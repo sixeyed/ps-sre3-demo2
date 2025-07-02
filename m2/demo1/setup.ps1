@@ -1,0 +1,213 @@
+#!/usr/bin/env pwsh
+
+# Demo 1 Setup Script - Manual Deployment Anti-Patterns Test Environment
+# Creates a 3-node k3d cluster with older Kubernetes version
+
+param(
+    [string]$ClusterName = "test-cluster",
+    [string]$KubernetesVersion = "v1.24.2-k3s1",
+    [int]$ApiPort = 6551,
+    [int]$HttpPort = 8080,
+    [int]$RegistryPort = 5001
+)
+
+Write-Host "=== Demo 1 Setup: Creating Test Environment ===" -ForegroundColor Green
+Write-Host ""
+
+# Function to check if command exists
+function Test-Command {
+    param([string]$Command)
+    $null = Get-Command $Command -ErrorAction SilentlyContinue
+    return $?
+}
+
+# Check prerequisites
+Write-Host "Checking prerequisites..." -ForegroundColor Yellow
+
+if (-not (Test-Command "docker")) {
+    Write-Error "Docker is not installed or not in PATH"
+    exit 1
+}
+
+if (-not (Test-Command "k3d")) {
+    Write-Error "k3d is not installed or not in PATH"
+    exit 1
+}
+
+if (-not (Test-Command "kubectl")) {
+    Write-Error "kubectl is not installed or not in PATH"
+    exit 1
+}
+
+# Check if Docker is running
+try {
+    docker info | Out-Null
+    Write-Host "✓ Docker is running" -ForegroundColor Green
+}
+catch {
+    Write-Error "Docker is not running. Please start Docker Desktop."
+    exit 1
+}
+
+Write-Host "✓ k3d is available" -ForegroundColor Green
+Write-Host "✓ kubectl is available" -ForegroundColor Green
+Write-Host ""
+
+# Clean up existing cluster if it exists
+Write-Host "Cleaning up any existing cluster..." -ForegroundColor Yellow
+k3d cluster delete $ClusterName 2>$null
+
+# Create k3d cluster with older Kubernetes version
+Write-Host "Creating k3d cluster with Kubernetes $KubernetesVersion..." -ForegroundColor Yellow
+Write-Host "Cluster name: $ClusterName" -ForegroundColor Cyan
+Write-Host "API port: $ApiPort" -ForegroundColor Cyan
+Write-Host "HTTP port: $HttpPort" -ForegroundColor Cyan
+Write-Host "Registry port: $RegistryPort" -ForegroundColor Cyan
+
+$clusterCommand = @(
+    "k3d", "cluster", "create", $ClusterName,
+    "--image", "rancher/k3s:$KubernetesVersion",
+    "--api-port", $ApiPort,
+    "--servers", "1",
+    "--agents", "3",
+    "--port", "$HttpPort`:$HttpPort@loadbalancer",
+    "--registry-create", "test-registry:$RegistryPort"
+)
+
+Write-Host "Running: $($clusterCommand -join ' ')" -ForegroundColor Gray
+& $clusterCommand[0] $clusterCommand[1..$clusterCommand.Length]
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to create k3d cluster"
+    exit 1
+}
+
+Write-Host "✓ Cluster created successfully" -ForegroundColor Green
+Write-Host ""
+
+# Wait for cluster to be ready
+Write-Host "Waiting for cluster to be ready..." -ForegroundColor Yellow
+$timeout = 60
+$elapsed = 0
+
+do {
+    Start-Sleep -Seconds 2
+    $elapsed += 2
+    $nodes = kubectl get nodes --no-headers 2>$null
+    $readyNodes = ($nodes | Where-Object { $_ -match "Ready" }).Count
+    
+    if ($readyNodes -eq 4) { # 1 server + 3 agents
+        Write-Host "✓ All nodes are ready" -ForegroundColor Green
+        break
+    }
+    
+    if ($elapsed -ge $timeout) {
+        Write-Error "Timeout waiting for cluster to be ready"
+        exit 1
+    }
+    
+    Write-Host "Waiting for nodes to be ready... ($elapsed/$timeout seconds)" -ForegroundColor Gray
+} while ($true)
+
+# Verify cluster version
+Write-Host ""
+Write-Host "Verifying cluster version..." -ForegroundColor Yellow
+kubectl get nodes -o wide
+
+Write-Host ""
+Write-Host "Cluster node capacity:" -ForegroundColor Yellow
+kubectl describe nodes | Select-String -Pattern "Capacity:" -A 5
+
+Write-Host ""
+
+# Prepare container images
+Write-Host "Preparing container images..." -ForegroundColor Yellow
+
+$images = @(
+    @{
+        Source = "sixeyed/reliability-demo:m1-01"
+        Targets = @(
+            "localhost:$RegistryPort/testregistry.azurecr.io/reliability-demo:2024-01-14-1200",
+            "localhost:$RegistryPort/testregistry.azurecr.io/reliability-demo:2024-01-14-1630",
+            "localhost:$RegistryPort/testregistry.azurecr.io/reliability-demo:2024-01-15-0900"
+        )
+    }
+)
+
+foreach ($imageSet in $images) {
+    Write-Host "Pulling $($imageSet.Source)..." -ForegroundColor Cyan
+    docker pull $imageSet.Source
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to pull $($imageSet.Source)"
+        exit 1
+    }
+    
+    foreach ($target in $imageSet.Targets) {
+        Write-Host "Tagging as $target..." -ForegroundColor Gray
+        docker tag $imageSet.Source $target
+        
+        Write-Host "Pushing $target..." -ForegroundColor Gray
+        docker push $target
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to push $target"
+            exit 1
+        }
+    }
+}
+
+# Create broken test image
+Write-Host "Creating broken test image..." -ForegroundColor Yellow
+$brokenImage = "localhost:$RegistryPort/testregistry.azurecr.io/reliability-demo:broken-test"
+
+docker run --name broken-container alpine:latest sh -c "exit 1" 2>$null
+docker commit broken-container $brokenImage | Out-Null
+docker push $brokenImage | Out-Null
+docker rm broken-container | Out-Null
+
+Write-Host "✓ Container images prepared" -ForegroundColor Green
+Write-Host ""
+
+# Verify setup
+Write-Host "Verifying setup..." -ForegroundColor Yellow
+
+Write-Host "Cluster nodes:" -ForegroundColor Cyan
+kubectl get nodes
+
+Write-Host ""
+Write-Host "Checking for existing reliability-demo namespace:" -ForegroundColor Cyan
+$namespace = kubectl get namespaces | Select-String "reliability-demo"
+if ($namespace) {
+    Write-Host "Found: $namespace" -ForegroundColor Red
+} else {
+    Write-Host "✓ No existing reliability-demo namespace" -ForegroundColor Green
+}
+
+Write-Host ""
+Write-Host "Registry catalog:" -ForegroundColor Cyan
+try {
+    $catalog = Invoke-RestMethod -Uri "http://localhost:$RegistryPort/v2/_catalog" -TimeoutSec 5
+    Write-Host "✓ Registry accessible" -ForegroundColor Green
+    Write-Host "Available repositories:" -ForegroundColor Gray
+    $catalog.repositories | ForEach-Object { Write-Host "  - $_" -ForegroundColor Gray }
+}
+catch {
+    Write-Warning "Could not verify registry catalog: $($_.Exception.Message)"
+}
+
+Write-Host ""
+Write-Host "=== Setup Complete ===" -ForegroundColor Green
+Write-Host ""
+Write-Host "Your test environment is ready with:" -ForegroundColor White
+Write-Host "• Kubernetes version: $KubernetesVersion (outdated/unsupported)" -ForegroundColor Yellow
+Write-Host "• 4 nodes: 1 server + 3 agents" -ForegroundColor Yellow
+Write-Host "• Local registry: localhost:$RegistryPort" -ForegroundColor Yellow
+Write-Host "• Application port: localhost:$HttpPort" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "To run the demo:" -ForegroundColor White
+Write-Host "  ./run-demo.sh" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "To clean up when done:" -ForegroundColor White
+Write-Host "  ./cleanup.ps1" -ForegroundColor Cyan
+Write-Host ""

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reliability-demo-config-broken
+  namespace: reliability-demo
+data:
+  redis.connectionString: "localhost:6379"
+  sqlserver.connectionString: "Server=localhost;Database=ReliabilityDemo;User Id=sa;Password=YourStrong@Passw0rd"
+  app.environment: "test"
+  logging.level: "Debug"

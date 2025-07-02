@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reliability-demo-worker
+  namespace: reliability-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: reliability-demo
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: reliability-demo
+        component: worker
+    spec:
+      containers:
+      - name: worker
+        image: sixeyed/reliability-demo-worker:m1-01
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        volumeMounts:
+        - name: config
+          mountPath: /app/appsettings.json
+          subPath: appsettings.json
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "ps aux | grep -v grep | grep -q dotnet"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: reliability-demo-config

@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+*.md
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+
+# NuGet
+packages/
+*.nupkg
+
+# Test results
+TestResults/
+[Cc]overage/
+
+# Runtime artifacts
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Docker
+Dockerfile*
+.dockerignore

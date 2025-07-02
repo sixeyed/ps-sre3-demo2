@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "reliability-demo.fullname" . }}-web
+  labels:
+    {{- include "reliability-demo.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: {{ .Values.web.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "reliability-demo.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        {{- include "reliability-demo.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: web
+    spec:
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: web
+        {{- with .Values.securityContext }}
+        securityContext:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag }}"
+        imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        - name: ConnectionStrings__SqlServer
+          value: "Server={{ include "reliability-demo.fullname" . }}-sqlserver,1433;Database=ReliabilityDemo;User Id=sa;Password={{ .Values.sqlserver.auth.saPassword }};TrustServerCertificate=true"
+        - name: ConnectionStrings__Redis
+          value: "{{ include "reliability-demo.fullname" . }}-redis-master:6379"
+        - name: DataStore__Provider
+          value: {{ .Values.config.dataStore.provider | quote }}
+        - name: SqlServerDataStore__MaxConcurrentClients
+          value: {{ .Values.config.sqlServerDataStore.maxConcurrentClients | quote }}
+        - name: SqlServerDataStore__AutoMigrate
+          value: {{ .Values.config.sqlServerDataStore.autoMigrate | quote }}
+        - name: RedisDataStore__MaxConcurrentClients
+          value: {{ .Values.config.redisDataStore.maxConcurrentClients | quote }}
+        - name: DistributedCache__Enabled
+          value: {{ .Values.config.distributedCache.enabled | quote }}
+        - name: DistributedCache__ExpirationSeconds
+          value: {{ .Values.config.distributedCache.expirationSeconds | quote }}
+        - name: CustomerOperation__Pattern
+          value: {{ .Values.config.customerOperation.pattern | quote }}
+        - name: Messaging__Enabled
+          value: {{ .Values.config.messaging.enabled | quote }}
+        - name: Messaging__CustomerChannelName
+          value: {{ .Values.config.messaging.customerChannelName | quote }}
+        - name: Messaging__RetryAttempts
+          value: {{ .Values.config.messaging.retryAttempts | quote }}
+        - name: Messaging__RetryDelayMs
+          value: {{ .Values.config.messaging.retryDelayMs | quote }}
+        - name: FailureConfig__Enabled
+          value: {{ .Values.config.failureConfig.enabled | quote }}
+        - name: FailureConfig__ConnectionFailureRate
+          value: {{ .Values.config.failureConfig.connectionFailureRate | quote }}
+        - name: FailureConfig__ReadTimeoutRate
+          value: {{ .Values.config.failureConfig.readTimeoutRate | quote }}
+        - name: FailureConfig__WriteTimeoutRate
+          value: {{ .Values.config.failureConfig.writeTimeoutRate | quote }}
+        - name: FailureConfig__SlowResponseRate
+          value: {{ .Values.config.failureConfig.slowResponseRate | quote }}
+        - name: FailureConfig__ReadTimeoutMs
+          value: {{ .Values.config.failureConfig.readTimeoutMs | quote }}
+        - name: FailureConfig__WriteTimeoutMs
+          value: {{ .Values.config.failureConfig.writeTimeoutMs | quote }}
+        - name: FailureConfig__SlowResponseDelayMs
+          value: {{ .Values.config.failureConfig.slowResponseDelayMs | quote }}
+        {{- with .Values.web.livenessProbe }}
+        livenessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.web.readinessProbe }}
+        readinessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.web.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

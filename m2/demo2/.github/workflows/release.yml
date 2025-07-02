@@ -1,0 +1,193 @@
+name: Build and Deploy Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.2.3
+
+env:
+  REGISTRY: ghcr.io
+  WEB_IMAGE_NAME: ${{ github.repository }}/reliability-demo
+  WORKER_IMAGE_NAME: ${{ github.repository }}/reliability-demo-worker
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract version from tag
+      id: version
+      run: |
+        # Extract version from tag (remove 'v' prefix)
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata for web image
+      id: meta-web
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}
+        tags: |
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=ref,event=tag
+
+    - name: Extract metadata for worker image
+      id: meta-worker
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.WORKER_IMAGE_NAME }}
+        tags: |
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=ref,event=tag
+
+    - name: Build and push web image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src
+        file: ./src/ReliabilityDemo/Dockerfile
+        push: true
+        tags: ${{ steps.meta-web.outputs.tags }}
+        labels: ${{ steps.meta-web.outputs.labels }}
+        platforms: linux/amd64,linux/arm64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build and push worker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./src
+        file: ./src/ReliabilityDemo.Worker/Dockerfile
+        push: true
+        tags: ${{ steps.meta-worker.outputs.tags }}
+        labels: ${{ steps.meta-worker.outputs.labels }}
+        platforms: linux/amd64,linux/arm64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Update Helm chart versions
+      run: |
+        VERSION=${{ steps.version.outputs.VERSION }}
+        
+        # Update image tags in values.yaml
+        sed -i "s|tag: \".*\"|tag: \"v$VERSION\"|g" helm/app/values.yaml
+        
+        # Update chart version and appVersion in Chart.yaml
+        sed -i "s|version: .*|version: $VERSION|g" helm/app/Chart.yaml
+        sed -i "s|appVersion: \".*\"|appVersion: \"v$VERSION\"|g" helm/app/Chart.yaml
+        
+        echo "Updated Helm chart to version $VERSION"
+
+    - name: Configure Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Commit and push version updates
+      run: |
+        VERSION=${{ steps.version.outputs.VERSION }}
+        
+        # Check if there are changes to commit
+        if git diff --quiet; then
+          echo "No changes to commit"
+          exit 0
+        fi
+        
+        # Add and commit changes
+        git add helm/app/values.yaml helm/app/Chart.yaml
+        git commit -m "🚀 Release v$VERSION - Update Helm chart versions
+
+        - Updated web image tag to v$VERSION
+        - Updated worker image tag to v$VERSION  
+        - Updated chart version to $VERSION
+        - Updated appVersion to v$VERSION
+        
+        Images:
+        - ${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}:v$VERSION
+        - ${{ env.REGISTRY }}/${{ env.WORKER_IMAGE_NAME }}:v$VERSION"
+        
+        # Push changes
+        git push origin main
+        
+        echo "✅ Pushed version update commit to main branch"
+        echo "🎯 ArgoCD will now detect changes and deploy v$VERSION"
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: Release ${{ github.ref_name }}
+        body: |
+          ## 🚀 Release ${{ github.ref_name }}
+          
+          ### Container Images
+          - **Web API**: `${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}:v${{ steps.version.outputs.VERSION }}`
+          - **Worker**: `${{ env.REGISTRY }}/${{ env.WORKER_IMAGE_NAME }}:v${{ steps.version.outputs.VERSION }}`
+          
+          ### Deployment
+          This release has been automatically deployed via GitOps:
+          1. ✅ Docker images built and pushed to GHCR
+          2. ✅ Helm chart updated with new version
+          3. ✅ Changes committed to main branch
+          4. 🔄 ArgoCD will detect changes and deploy automatically
+          
+          ### Architecture
+          - Multi-platform images (AMD64 + ARM64)
+          - Production-ready Helm chart
+          - Automatic scaling and health checks
+          - Self-healing deployment via ArgoCD
+          
+          ### Monitoring
+          Monitor the deployment in ArgoCD dashboard or using:
+          ```bash
+          kubectl get pods -n reliability-demo -w
+          ```
+        draft: false
+        prerelease: false
+
+    - name: Deployment Summary
+      run: |
+        VERSION=${{ steps.version.outputs.VERSION }}
+        echo "## 🎉 Release v$VERSION Completed!"
+        echo ""
+        echo "### What happened:"
+        echo "1. ✅ Built and pushed container images to GHCR"
+        echo "   - ${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}:v$VERSION"
+        echo "   - ${{ env.REGISTRY }}/${{ env.WORKER_IMAGE_NAME }}:v$VERSION"
+        echo ""
+        echo "2. ✅ Updated Helm chart with new version"
+        echo "3. ✅ Committed changes to main branch"
+        echo "4. ✅ Created GitHub release"
+        echo ""
+        echo "### Next steps:"
+        echo "🔄 ArgoCD will automatically detect the changes and deploy v$VERSION"
+        echo "📊 Monitor deployment in ArgoCD dashboard"
+        echo "🔍 Check application health at /api/health endpoint"
+        echo ""
+        echo "### Rollback (if needed):"
+        echo "git revert HEAD && git push"
