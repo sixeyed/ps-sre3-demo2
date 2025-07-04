@@ -14,7 +14,66 @@ Before using this repository, ensure you have:
 
 ### Repository Setup
 
-#### 1. GitHub Container Registry (GHCR) Permissions
+#### 1. Azure Authentication Setup
+
+To deploy the infrastructure using GitHub Actions, you need to configure Azure authentication:
+
+**Create Azure Service Principal**:
+```bash
+# Create service principal and save the output
+az ad sp create-for-rbac --name "github-actions-ps-sre3-demo2" \
+  --role contributor \
+  --scopes /subscriptions/{subscription-id} \
+  --sdk-auth
+
+# Output will look like:
+{
+  "clientId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "clientSecret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "subscriptionId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "tenantId": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  ...
+}
+```
+
+**Add Repository Secrets**:
+
+Go to **Settings** → **Secrets and variables** → **Actions** and add:
+
+| Secret Name | Value |
+|------------|-------|
+| `AZURE_CLIENT_ID` | The `clientId` from service principal |
+| `AZURE_CLIENT_SECRET` | The `clientSecret` from service principal |
+| `AZURE_SUBSCRIPTION_ID` | Your Azure subscription ID |
+| `AZURE_TENANT_ID` | The `tenantId` from service principal |
+| `TERRAFORM_STATE_RG` | Resource group for Terraform state (e.g., `terraform-state-rg`) |
+| `TERRAFORM_STATE_SA` | Storage account for Terraform state (e.g., `tfstatesre3demo`) |
+| `TERRAFORM_STATE_CONTAINER` | Container name for state files (e.g., `tfstate`) |
+
+**Create Terraform State Backend** (one-time setup):
+```bash
+# Create resource group for Terraform state
+az group create --name terraform-state-rg --location eastus
+
+# Create storage account (must be globally unique)
+az storage account create \
+  --resource-group terraform-state-rg \
+  --name tfstatesre3demo \
+  --sku Standard_LRS \
+  --encryption-services blob
+
+# Create blob container
+az storage container create \
+  --name tfstate \
+  --account-name tfstatesre3demo
+```
+
+**Configure Environment Variables** (optional):
+
+Go to **Settings** → **Environments** → Create environments (`demo`, `staging`, `production`) and add:
+- `AZURE_LOCATION`: Azure region (default: `eastus`)
+
+#### 2. GitHub Container Registry (GHCR) Permissions
 
 Enable GHCR and set proper permissions:
 
@@ -77,9 +136,22 @@ Set up branch protection for the main branch:
    sed -i 's|sixeyed/ps-sre3-demo2|YOUR-USERNAME/YOUR-REPO|g' .github/workflows/build-pr.yml
    ```
 
-3. **Deploy AKS infrastructure** (from main repository):
+3. **Deploy AKS infrastructure**:
+   
+   **Option A: Using GitHub Actions (Recommended)**
+   ```bash
+   # Go to Actions tab in GitHub
+   # Run "Deploy Infrastructure" workflow
+   # Select:
+   #   - Action: apply
+   #   - Environment: demo
+   ```
+   
+   **Option B: Local Terraform deployment**
    ```bash
    cd terraform
+   terraform init
+   terraform plan
    terraform apply
    ```
 
@@ -298,6 +370,48 @@ git push origin main
 git revert <commit-hash>
 git push origin main
 ```
+
+## 🏗️ Infrastructure Management
+
+### Deploy Infrastructure
+
+Use the GitHub Actions workflow to manage your AKS cluster:
+
+1. **Go to Actions tab** in your GitHub repository
+2. **Run "Deploy Infrastructure"** workflow
+3. **Select options**:
+   - **Action**: `plan` (to preview changes), `apply` (to deploy), or `destroy` (to cleanup)
+   - **Environment**: `demo`, `staging`, or `production`
+
+### Infrastructure Workflow Features
+
+- ✅ **Terraform Plan/Apply/Destroy**: Complete infrastructure lifecycle
+- ✅ **Multiple Environments**: Support for demo, staging, production  
+- ✅ **State Management**: Uses Azure Storage for Terraform state
+- ✅ **Security**: Uses Azure Service Principal authentication
+- ✅ **Validation**: Runs terraform fmt and validate checks
+- ✅ **ArgoCD Setup**: Automatically installs and configures ArgoCD
+- ✅ **Application Bootstrap**: Deploys app-of-apps pattern
+
+### Post-Deployment
+
+After successful infrastructure deployment, the workflow provides:
+
+- **ArgoCD admin password** in the workflow summary
+- **kubectl access commands** to connect to your cluster
+- **ArgoCD port-forward instructions** to access the UI
+- **Application status** showing deployed applications
+
+### Infrastructure Cleanup
+
+To destroy the infrastructure:
+```bash
+# Run the workflow with destroy action
+# Go to Actions → Deploy Infrastructure
+# Select: Action = destroy, Environment = demo
+```
+
+**Warning**: This will delete the entire AKS cluster and all applications!
 
 ## Repository Structure
 

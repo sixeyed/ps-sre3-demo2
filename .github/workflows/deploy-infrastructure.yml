@@ -1,0 +1,169 @@
+name: Deploy Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Terraform action to perform'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'demo'
+        type: choice
+        options:
+          - demo
+          - staging
+          - production
+
+env:
+  TERRAFORM_VERSION: '1.5.7'
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+jobs:
+  terraform:
+    name: 'Terraform ${{ inputs.action }} - ${{ inputs.environment }}'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: |
+          {
+            "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+          }
+
+    - name: Terraform Init
+      run: |
+        terraform init \
+          -backend-config="resource_group_name=${{ secrets.TERRAFORM_STATE_RG }}" \
+          -backend-config="storage_account_name=${{ secrets.TERRAFORM_STATE_SA }}" \
+          -backend-config="container_name=${{ secrets.TERRAFORM_STATE_CONTAINER }}" \
+          -backend-config="key=${{ inputs.environment }}.terraform.tfstate"
+
+    - name: Terraform Format Check
+      if: inputs.action == 'plan'
+      run: terraform fmt -check
+
+    - name: Terraform Validate
+      if: inputs.action == 'plan'
+      run: terraform validate
+
+    - name: Terraform Plan
+      if: inputs.action == 'plan'
+      run: |
+        terraform plan \
+          -var="environment=${{ inputs.environment }}" \
+          -var="location=${{ vars.AZURE_LOCATION || 'eastus' }}" \
+          -out=tfplan
+
+    - name: Upload Plan
+      if: inputs.action == 'plan'
+      uses: actions/upload-artifact@v3
+      with:
+        name: tfplan-${{ inputs.environment }}
+        path: terraform/tfplan
+
+    - name: Terraform Apply
+      if: inputs.action == 'apply'
+      run: |
+        # Download plan from previous run if available
+        if [ -f "tfplan" ]; then
+          echo "Using existing plan file"
+          terraform apply -auto-approve tfplan
+        else
+          echo "No plan file found, creating new plan and applying"
+          terraform apply -auto-approve \
+            -var="environment=${{ inputs.environment }}" \
+            -var="location=${{ vars.AZURE_LOCATION || 'eastus' }}"
+        fi
+
+    - name: Terraform Destroy
+      if: inputs.action == 'destroy'
+      run: |
+        terraform destroy -auto-approve \
+          -var="environment=${{ inputs.environment }}" \
+          -var="location=${{ vars.AZURE_LOCATION || 'eastus' }}"
+
+    - name: Save Terraform Outputs
+      if: inputs.action == 'apply'
+      id: outputs
+      run: |
+        echo "## Terraform Outputs" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        terraform output -json | jq . >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        
+        # Save specific outputs for other workflows
+        echo "aks_cluster_name=$(terraform output -raw aks_cluster_name)" >> $GITHUB_OUTPUT
+        echo "resource_group_name=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
+        echo "argocd_namespace=$(terraform output -raw argocd_namespace)" >> $GITHUB_OUTPUT
+
+    - name: Get AKS Credentials
+      if: inputs.action == 'apply'
+      run: |
+        az aks get-credentials \
+          --resource-group $(terraform output -raw resource_group_name) \
+          --name $(terraform output -raw aks_cluster_name) \
+          --overwrite-existing
+
+    - name: Verify ArgoCD Installation
+      if: inputs.action == 'apply'
+      run: |
+        echo "## ArgoCD Status" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        kubectl get pods -n argocd >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        
+        echo "## ArgoCD Applications" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        kubectl get applications -n argocd >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+
+    - name: Get ArgoCD Access Info
+      if: inputs.action == 'apply'
+      run: |
+        echo "## ArgoCD Access Information" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Get ArgoCD password
+        ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+        echo "### Admin Password" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "Username: admin" >> $GITHUB_STEP_SUMMARY
+        echo "Password: ${ARGOCD_PASSWORD}" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        
+        # Get service info
+        echo "### Access ArgoCD" >> $GITHUB_STEP_SUMMARY
+        echo '```bash' >> $GITHUB_STEP_SUMMARY
+        echo "# Port forward to access ArgoCD UI" >> $GITHUB_STEP_SUMMARY
+        echo "kubectl port-forward svc/argocd-server -n argocd 8080:443" >> $GITHUB_STEP_SUMMARY
+        echo "# Access at https://localhost:8080" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
