@@ -57,12 +57,14 @@ Write-Host ""
 Write-Host "Cleaning up any existing cluster..." -ForegroundColor Yellow
 k3d cluster delete $ClusterName 2>$null
 
-# Create k3d cluster with older Kubernetes version
+# Create k3d cluster with older Kubernetes version and resource constraints
 Write-Host "Creating k3d cluster with Kubernetes $KubernetesVersion..." -ForegroundColor Yellow
 Write-Host "Cluster name: $ClusterName" -ForegroundColor Cyan
 Write-Host "API port: $ApiPort" -ForegroundColor Cyan
 Write-Host "HTTP port: $HttpPort" -ForegroundColor Cyan
 Write-Host "Registry port: $RegistryPort" -ForegroundColor Cyan
+Write-Host "Resource limits: 1.5GB per worker, 1GB for control plane" -ForegroundColor Yellow
+Write-Host "Control plane scheduling: Disabled (NoSchedule taint)" -ForegroundColor Yellow
 
 $clusterCommand = @(
     "k3d", "cluster", "create", $ClusterName,
@@ -71,7 +73,10 @@ $clusterCommand = @(
     "--servers", "1",
     "--agents", "3",
     "--port", "$HttpPort`:$HttpPort@loadbalancer",
-    "--registry-create", "test-registry:$RegistryPort"
+    "--registry-create", "test.registry:$RegistryPort",
+    "--agents-memory", "1.5g",
+    "--servers-memory", "1g",
+    "--k3s-arg", "--node-taint=CriticalAddonsOnly=true:NoSchedule@server:*"
 )
 
 Write-Host "Running: $($clusterCommand -join ' ')" -ForegroundColor Gray
@@ -127,9 +132,9 @@ $images = @(
     @{
         Source = "sixeyed/reliability-demo:m1-01"
         Targets = @(
-            "localhost:$RegistryPort/testregistry.azurecr.io/reliability-demo:2024-01-14-1200",
-            "localhost:$RegistryPort/testregistry.azurecr.io/reliability-demo:2024-01-14-1630",
-            "localhost:$RegistryPort/testregistry.azurecr.io/reliability-demo:2024-01-15-0900"
+            "test.registry:$RegistryPort/reliability-demo:2024-01-14-1200",
+            "test.registry:$RegistryPort/reliability-demo:2024-01-14-1630",
+            "test.registry:$RegistryPort/reliability-demo:2024-01-15-0900"
         )
     }
 )
@@ -159,7 +164,7 @@ foreach ($imageSet in $images) {
 
 # Create broken test image
 Write-Host "Creating broken test image..." -ForegroundColor Yellow
-$brokenImage = "localhost:$RegistryPort/testregistry.azurecr.io/reliability-demo:broken-test"
+$brokenImage = "test.registry:$RegistryPort/reliability-demo:broken-test"
 
 docker run --name broken-container alpine:latest sh -c "exit 1" 2>$null
 docker commit broken-container $brokenImage | Out-Null
@@ -187,13 +192,21 @@ if ($namespace) {
 Write-Host ""
 Write-Host "Registry catalog:" -ForegroundColor Cyan
 try {
-    $catalog = Invoke-RestMethod -Uri "http://localhost:$RegistryPort/v2/_catalog" -TimeoutSec 5
-    Write-Host "✓ Registry accessible" -ForegroundColor Green
+    $catalog = Invoke-RestMethod -Uri "http://test.registry:$RegistryPort/v2/_catalog" -TimeoutSec 5
+    Write-Host "✓ Registry accessible at test.registry:$RegistryPort" -ForegroundColor Green
     Write-Host "Available repositories:" -ForegroundColor Gray
     $catalog.repositories | ForEach-Object { Write-Host "  - $_" -ForegroundColor Gray }
 }
 catch {
-    Write-Warning "Could not verify registry catalog: $($_.Exception.Message)"
+    # Try localhost as fallback
+    try {
+        $catalog = Invoke-RestMethod -Uri "http://localhost:$RegistryPort/v2/_catalog" -TimeoutSec 5
+        Write-Host "✓ Registry accessible at localhost:$RegistryPort" -ForegroundColor Green
+        Write-Host "Note: Add 'test.registry' to your hosts file pointing to 127.0.0.1" -ForegroundColor Yellow
+    }
+    catch {
+        Write-Warning "Could not verify registry catalog: $($_.Exception.Message)"
+    }
 }
 
 Write-Host ""
@@ -202,8 +215,11 @@ Write-Host ""
 Write-Host "Your test environment is ready with:" -ForegroundColor White
 Write-Host "• Kubernetes version: $KubernetesVersion (outdated/unsupported)" -ForegroundColor Yellow
 Write-Host "• 4 nodes: 1 server + 3 agents" -ForegroundColor Yellow
-Write-Host "• Local registry: localhost:$RegistryPort" -ForegroundColor Yellow
+Write-Host "• Local registry: test.registry:$RegistryPort" -ForegroundColor Yellow
 Write-Host "• Application port: localhost:$HttpPort" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "IMPORTANT: Add this line to your hosts file:" -ForegroundColor Red
+Write-Host "127.0.0.1    test.registry" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "To run the demo:" -ForegroundColor White
 Write-Host "  ./run-demo.sh" -ForegroundColor Cyan

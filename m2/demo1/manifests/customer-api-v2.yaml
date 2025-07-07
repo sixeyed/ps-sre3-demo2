@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: web
-        image: testregistry.azurecr.io/reliability-demo:2024-01-14-1630
+        image: test.registry:5001/reliability-demo:2024-01-14-1630
         ports:
         - containerPort: 8080
         env:

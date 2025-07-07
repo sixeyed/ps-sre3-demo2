@@ -1,128 +1,153 @@
-# Module 2 Clip 02 - Development Team Deployment Demo Steps
+# Manual Deployment Runbook
 
-This demo shows how the development team currently deploys their application to test environments. The process works for their needs but isn't ready for production scale.
+**Version:** 1.2  
+**Last Updated:** 2024-01-15  
+**Owner:** Development Team
+
+This runbook documents the manual deployment process for the reliability-demo application to test environments. Follow these steps in order to deploy code changes.
 
 ## Prerequisites
-- Test Kubernetes cluster (manually created, running older version)
-- kubectl configured with test cluster credentials
-- Docker registry with test images
-- Shared folder with deployment manifests
 
-## Demo Steps
+- Test Kubernetes cluster configured in kubectl context
+- PowerShell 7+ installed
+- Docker Desktop running
+- Access to test.registry:5001 container registry
+- Deployment manifests in `manifests/` folder
 
-### 1. Connect to Test Cluster
-```bash
-# Show the manually created test cluster
+## Deployment Steps
+
+### Step 1: Verify Test Cluster Connection
+
+```powershell
+# Connect to test cluster
 kubectl get nodes
-# Note: 3 worker nodes, older Kubernetes version
 
-# Show current deployments
+# Verify current application status  
 kubectl get deployments -n reliability-demo
+kubectl get pods -n reliability-demo
 ```
 
-### 2. Build and Push Container Image
-```bash
-# Build with timestamp tag
-docker build -t testregistry.azurecr.io/customer-api:2024-01-15-1430 .
-docker push testregistry.azurecr.io/customer-api:2024-01-15-1430
+**Expected Result:** 3 worker nodes showing Ready status, existing deployments running
+
+### Step 2: Build and Tag Container Image
+
+```powershell
+# Generate timestamp tag for new image
+$timestamp = Get-Date -Format "yyyy-MM-dd-HH"
+$imageTag = "test.registry:5001/reliability-demo:$timestamp"
+
+Write-Host "Building web image with tag: $imageTag"
+Push-Location ../../src
+
+# Build new container image
+docker build -t $imageTag -f ReliabilityDemo/Dockerfile .
+
+# Push to test registry
+docker push $imageTag
+
+Write-Host "Image pushed successfully: $imageTag"
+Pop-Location
 ```
 
-### 3. Update Kubernetes Manifests
-```bash
-# Show shared folder with multiple versions
+### Step 3: Update Deployment Manifest
+
+```powershell
+# Check you can see all the mainifests
 ls manifests/
-# customer-api-v1.yaml
-# customer-api-v2.yaml  
-# customer-api-final.yaml
 
-# Edit the "final" version with new image tag
-vi manifests/customer-api-final.yaml
-# Update image: testregistry.azurecr.io/customer-api:2024-01-15-1430
+# Update the final manifest with new image tag
+$manifestPath = "manifests/customer-api-final.yaml"
+$manifest = Get-Content $manifestPath
+
+# Replace image tag (find the image line and update)
+$manifest = $manifest -replace "image: test\.registry:5001/reliability-demo:.*", "image: $imageTag"
+
+# Save updated manifest
+$manifest | Set-Content $manifestPath
+
+Write-Host "Updated manifest with image: $imageTag"
 ```
 
-### 4. Apply Deployment
-```bash
-# Apply the manifest
-kubectl apply -f manifests/customer-api-final.yaml
+Check the manifest before you apply!
 
-# Monitor rollout (manual process)
-# Run k9s or repeatedly check pods
-kubectl get pods -n reliability-demo -w
+> [customer-api-final.yaml](manifests/customer-api-final.yaml)
+
+### Step 4: Apply Deployment
+
+```powershell
+# Apply the updated manifest
+kubectl apply -f $manifestPath
 ```
 
-### 5. Deployment Issues - Resource Constraints
-```bash
-# Pods stuck in pending
-kubectl describe pod customer-api-xxxxx -n reliability-demo
-# Events: Insufficient memory
+> Monitor the rollout
 
-# Fix resource requests in YAML
-vi manifests/customer-api-final.yaml
-# Reduce memory requests for test environment
+### Step 5: Check it works!
 
-# Reapply
-kubectl apply -f manifests/customer-api-final.yaml
-```
+Browse to the app: 
 
-### 6. Verify Deployment
-```bash
-# Browse to application
-# Show it's partially working
+> http://localhost:8080
 
-# Check logs for errors
-kubectl logs -n reliability-demo deployment/customer-api
-# Error: Cannot connect to Redis at localhost:6379
-```
+Check the logs (thanks Carlos!):
 
-### 7. Fix Configuration Error
-```bash
-# Update ConfigMap with correct Redis host
-kubectl edit configmap customer-api-config -n reliability-demo
-# Change Redis host from localhost to redis-master
+> http://localhost:3000/explore?schemaVersion=1&panes=%7B%22zwl%22:%7B%22datasource%22:%22P8E80F9AEF21F6940%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22expr%22:%22%7Bnamespace%3D%5C%22sre3-m1%5C%22%7D%20%7C%3D%20%60%60%22,%22queryType%22:%22range%22,%22datasource%22:%7B%22type%22:%22loki%22,%22uid%22:%22P8E80F9AEF21F6940%22%7D,%22editorMode%22:%22builder%22%7D%5D,%22range%22:%7B%22from%22:%22now-5m%22,%22to%22:%22now%22%7D%7D%7D&orgId=1
 
-# Restart pods
-kubectl rollout restart deployment customer-api -n reliability-demo
-```
+Any issues, see troubleshooting below.
 
-### 8. Demonstrate Scaling Issues
-```bash
-# Try to scale to 10 replicas
-kubectl scale deployment customer-api --replicas=10 -n reliability-demo
+## Troubleshooting
 
-# Show pods stuck in pending
-kubectl get pods -n reliability-demo
-# Multiple pods in Pending state - not enough nodes
-# No autoscaling configured
-```
+### Common Issues
 
-### 9. Show Missing Health Checks
-```bash
-# Deploy broken image
-kubectl set image deployment/customer-api customer-api=testregistry.azurecr.io/customer-api:broken-test -n reliability-demo
+**Pods stuck in Pending:**
+- Check resource requests vs cluster capacity
+- Verify nodes have sufficient CPU/memory
 
-# Kubernetes updates all pods even though app crashes
-kubectl get pods -n reliability-demo
-# Pods show Running but app is broken
+**Application not responding:**
+- Check ConfigMap for correct connection strings
+- Verify Redis and SQL Server pods are running
+- Review application logs for errors
 
-# Manual rollback required
-kubectl rollout undo deployment customer-api -n reliability-demo
-```
+**Image pull errors:**
+- Verify image exists in registry: `docker pull $imageTag`
+- Check registry connectivity from cluster
 
-### 10. Total Time and Issues
-- Deployment time: ~10 minutes (when it goes smoothly)
-- Multiple manual steps prone to errors
-- No automated rollback
-- No health checks
-- No self-healing capabilities
+### Resource Requirements
 
-## Key Problems Demonstrated
-1. **Manual cluster management** - Old Kubernetes version, no documentation
-2. **Timestamp versioning** - No semantic versioning or Git tags
-3. **Shared folder chaos** - Multiple YAML versions, unclear which is current
-4. **No dependency management** - Redis connection not validated
-5. **Resource mismatches** - Production specs in test environment
-6. **Missing health checks** - Kubernetes can't detect broken deployments
-7. **No autoscaling** - Manual intervention required for capacity
-8. **Configuration errors** - Easy to forget environment-specific settings
-9. **No rollback strategy** - Just "redeploy previous version" (which one?)
-10. **No self-healing** - Failed pods require manual intervention
+Current manifest ([`customer-api-final.yaml`](manifests/customer-api-final.yaml)) specifies:
+- **Memory Request:** 2Gi (may need to reduce for test cluster)
+- **CPU Request:** 1000m (may need to reduce for test cluster)  
+- **Replicas:** 5 (may exceed cluster capacity)
+
+### Configuration Dependencies
+
+The [`customer-api-config.yaml`](manifests/customer-api-config.yaml) ConfigMap must have:
+- Redis connection: `redis:6379` (not localhost)
+- SQL Server connection: `sqlserver:1433` (not localhost)
+
+## Post-Deployment Checklist
+
+- [ ] All pods in Running state
+- [ ] Application health endpoint responding
+- [ ] Web interface accessible
+- [ ] Customer operations working (create/read/update/delete)
+- [ ] No error logs in application pods
+
+## Notes
+
+- Deployment typically takes 5-10 minutes
+- Resource constraints may require manifest adjustments
+- No automated health checks - manual verification required
+- Rollback process is manual and time-consuming
+- Scaling limited by cluster capacity
+
+## Known Limitations
+
+1. **Manual process** - Each step requires human intervention
+2. **No health checks** - Kubernetes can't detect application failures
+3. **Resource mismatches** - Production specs don't fit test environment
+4. **Configuration drift** - Easy to forget environment-specific settings
+5. **No automated rollback** - Manual process to revert failed deployments
+6. **Timestamp versioning** - Difficult to track which version was previous
+
+---
+
+*This runbook will be replaced with automated GitOps deployment in the next iteration.*

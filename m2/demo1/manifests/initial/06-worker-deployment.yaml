@@ -23,8 +23,8 @@ spec:
           value: "Production"
         volumeMounts:
         - name: config
-          mountPath: /app/appsettings.json
-          subPath: appsettings.json
+          mountPath: /app/config
+          readOnly: true
         resources:
           requests:
             memory: "128Mi"
@@ -32,14 +32,6 @@ spec:
           limits:
             memory: "256Mi"
             cpu: "200m"
-        livenessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - "ps aux | grep -v grep | grep -q dotnet"
-          initialDelaySeconds: 30
-          periodSeconds: 10
       volumes:
       - name: config
         configMap:

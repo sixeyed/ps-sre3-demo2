@@ -26,10 +26,10 @@ Write-Host "Cleaning up Docker images..." -ForegroundColor Yellow
 
 # Remove test registry images
 $testImages = @(
-    "localhost:5001/testregistry.azurecr.io/reliability-demo:2024-01-14-1200",
-    "localhost:5001/testregistry.azurecr.io/reliability-demo:2024-01-14-1630",
-    "localhost:5001/testregistry.azurecr.io/reliability-demo:2024-01-15-0900",
-    "localhost:5001/testregistry.azurecr.io/reliability-demo:broken-test"
+    "test.registry:5001/reliability-demo:2024-01-14-1200",
+    "test.registry:5001/reliability-demo:2024-01-14-1630",
+    "test.registry:5001/reliability-demo:2024-01-15-0900",
+    "test.registry:5001/reliability-demo:broken-test"
 )
 
 foreach ($image in $testImages) {

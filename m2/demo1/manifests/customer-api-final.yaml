@@ -3,11 +3,8 @@ kind: Deployment
 metadata:
   name: reliability-demo-web
   namespace: reliability-demo
-  annotations:
-    last-updated-by: "dev-team"
-    last-updated: "2024-01-15"
 spec:
-  replicas: 5
+  replicas: 3
   selector:
     matchLabels:
       app: reliability-demo
@@ -20,44 +17,59 @@ spec:
     spec:
       containers:
       - name: web
-        image: testregistry.azurecr.io/reliability-demo:2024-01-15-0900
+        image: test.registry:5001/reliability-demo:2025-07-07-06
         ports:
         - containerPort: 8080
         env:
         - name: ASPNETCORE_ENVIRONMENT
           value: "Development"
-        - name: ConnectionStrings__Redis
-          valueFrom:
-            configMapKeyRef:
-              name: reliability-demo-config-broken
-              key: redis.connectionString
-        - name: ConnectionStrings__SqlServer
-          valueFrom:
-            configMapKeyRef:
-              name: reliability-demo-config-broken
-              key: sqlserver.connectionString
-        - name: DataStore__Provider
-          value: "SqlServer"
-        - name: SqlServerDataStore__MaxConcurrentClients
-          value: "2"
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+          readOnly: true
         resources:
           requests:
-            memory: "2Gi"
+            memory: "0.5Gi"
             cpu: "1000m"
           limits:
-            memory: "4Gi"
+            memory: "0.5Gi"
             cpu: "2000m"
+      volumes:
+      - name: config
+        configMap:
+          name: reliability-demo-config
 ---
 apiVersion: v1
-kind: Service
+kind: ConfigMap
 metadata:
-  name: reliability-demo-web
+  name: reliability-demo-config
   namespace: reliability-demo
-spec:
-  selector:
-    app: reliability-demo
-    component: web
-  ports:
-  - port: 80
-    targetPort: 8080
-  type: LoadBalancer
+data:
+  shared.json: |
+    {
+      "ConnectionStrings": {
+        "SqlServer": "Server=sqlserver;Database=ReliabilityDemo;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true",
+        "Redis": "redis:6379"
+      },
+      "DataStore": {
+        "Provider": "SqlServer"
+      },
+      "DistributedCache": {
+        "Enabled": true
+      },
+      "CustomerOperation" : {
+        "Pattern": "Async"
+      },
+      "Logging": {
+        "LogLevel": {
+          "Default": "Information",
+          "Microsoft.EntityFrameworkCore": "Warning",
+          "ReliabilityDemo": "Debug"
+        },
+        "Console": {
+          "FormatterName": "json",
+          "IncludeScopes": true,
+          "TimestampFormat": "HH:mm:ss.fff"
+        }
+      }
+    }
