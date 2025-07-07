@@ -7,7 +7,7 @@ variable "resource_group_name" {
 variable "location" {
   description = "Azure region for resources"
   type        = string
-  default     = "eastus"
+  default     = "westeurope"
 }
 
 variable "cluster_name" {
@@ -61,7 +61,7 @@ variable "max_node_count" {
 variable "git_repo_url" {
   description = "Git repository URL for ArgoCD apps"
   type        = string
-  default     = "https://github.com/your-org/reliability-demo-config"
+  default     = "https://github.com/sixeyed/ps-sre3-demo2"
 }
 
 variable "git_target_revision" {

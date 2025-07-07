@@ -37,7 +37,7 @@ func TestConfigurationValues(t *testing.T) {
 	// Test various configuration scenarios
 	configs := map[string]interface{}{
 		"cluster_name": "test-cluster",
-		"location":     "eastus",
+		"location":     "westeurope",
 		"node_count":   3,
 		"vm_size":      "Standard_D2_v3",
 	}

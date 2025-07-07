@@ -14,7 +14,7 @@ provider "azurerm" {
 # Minimal resource group for testing
 resource "azurerm_resource_group" "test" {
   name     = "test-rg-fixture"
-  location = "eastus"
+  location = "westeurope"
 }
 
 # Use the AKS module with minimal configuration

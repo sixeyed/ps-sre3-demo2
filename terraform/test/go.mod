@@ -1,4 +1,4 @@
-module github.com/your-org/reliability-demo/terraform/test
+module github.com/sixeyed/ps-sre3-demo2/terraform/test
 
 go 1.21
 

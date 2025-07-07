@@ -33,7 +33,7 @@ func TestFullStackIntegration(t *testing.T) {
 		Vars: map[string]interface{}{
 			"resource_group_name": resourceGroupName,
 			"cluster_name":        clusterName,
-			"location":            "eastus",
+			"location":            "westeurope",
 			"kubernetes_version":  "1.28.3",
 			"node_count":          1,
 			"min_node_count":      1,
@@ -154,7 +154,7 @@ func TestAKSModuleOnly(t *testing.T) {
 		Vars: map[string]interface{}{
 			"cluster_name":        fmt.Sprintf("aks-%s", uniqueID),
 			"resource_group_name": resourceGroupName,
-			"location":            "eastus",
+			"location":            "westeurope",
 			"kubernetes_version":  "1.28.3",
 			"node_count":          1,
 			"node_vm_size":        "Standard_B2s",
@@ -168,7 +168,7 @@ func TestAKSModuleOnly(t *testing.T) {
 	defer terraform.Destroy(t, terraformOptions)
 
 	// First create resource group
-	createResourceGroup(t, resourceGroupName, "eastus")
+	createResourceGroup(t, resourceGroupName, "westeurope")
 	defer deleteResourceGroup(t, resourceGroupName)
 
 	terraform.InitAndApply(t, terraformOptions)
@@ -195,7 +195,7 @@ func TestArgoCDModuleWithMockCluster(t *testing.T) {
 		Vars: map[string]interface{}{
 			"namespace":            "argocd-test",
 			"argocd_chart_version": "5.51.6",
-			"git_repo_url":         "https://github.com/test/repo",
+			"git_repo_url":         "https://github.com/sixeyed/ps-sre3-demo2",
 			"git_target_revision":  "main",
 		},
 		PlanFilePath: "terraform.tfplan",

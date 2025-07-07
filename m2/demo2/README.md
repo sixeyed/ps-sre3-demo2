@@ -1,341 +1,231 @@
-# Demo 2: Automated AKS Deployment with GitOps
+# Demo 2: Production-Ready GitOps Recording Guide
 
-This demo showcases the power of Infrastructure as Code (IaC) and GitOps for reliable, automated deployments. Watch as we transform the painful manual process into a smooth, self-healing system.
+## Pre-Demo Setup
 
-## Prerequisites
-
-- Terraform >= 1.5.0
-- Azure CLI configured
-- Git repository for ArgoCD configurations
+- Azure subscription with contributor access
+- PowerShell 7+
+- GitHub repository with secrets configured
 - kubectl installed
+- Broken test image available in registry
 
-## 🚀 One-Command Infrastructure
+## Demo Recording Steps
 
-### Step 1: Initialize Terraform
+### Step 1: Show Repository Structure
 
-```bash
-cd terraform
-terraform init
+```powershell
+# Show repository structure
+Get-ChildItem -Directory | Select-Object Name
 ```
 
-### Step 2: Deploy Everything
+**Files to show:**
+> [`terraform/main.tf`](../../terraform/main.tf)
+> [`terraform/variables.tf`](../../terraform/variables.tf)
 
-```bash
-# Review the plan
-terraform plan -out=tfplan
+### Step 2: Show Helm Chart Improvements
 
-# Deploy AKS + ArgoCD + Applications
-terraform apply tfplan
+**Files to show:**
+> [`helm/app/templates/deployment.yaml`](../../helm/app/templates/deployment.yaml) - Navigate to health check sections
+> [`helm/app/values.yaml`](../../helm/app/values.yaml) - Show probe configuration
+> [`helm/app/templates/hpa.yaml`](../../helm/app/templates/hpa.yaml) - Show autoscaling
+
+### Step 3: Show ArgoCD Configuration
+
+**Files to show:**
+> [`terraform/modules/argocd/main.tf`](../../terraform/modules/argocd/main.tf)
+> [`argocd-apps/reliability-demo.yaml`](../../argocd-apps/reliability-demo.yaml)
+
+### Step 4: Deploy Infrastructure via GitHub Actions
+
+**Show workflow:**
+> [`.github/workflows/deploy-infrastructure.yml`](../../.github/workflows/deploy-infrastructure.yml)
+
+**Trigger deployment:**
+1. Go to GitHub repository
+2. Navigate to Actions tab
+3. Select "Deploy Infrastructure" workflow
+4. Click "Run workflow"
+5. Select:
+   - Environment: `production`
+   - Action: `apply`
+6. Click "Run workflow"
+
+**Monitor deployment progress in GitHub Actions UI**
+
+### Step 5: Verify Infrastructure
+
+```powershell
+# Once deployment completes, get AKS credentials
+az aks get-credentials --resource-group reliability-demo-prod --name aks-reliability-demo-prod
+
+# Verify cluster
+kubectl get nodes
+kubectl get ns
 ```
 
-That's it! In ~10 minutes, you have:
-- ✅ AKS cluster with auto-scaling across 3 availability zones
-- ✅ ArgoCD installed and configured
-- ✅ All applications deployed with health checks
-- ✅ Monitoring and observability configured
-- ✅ Self-healing enabled at every layer
+### Step 6: Demonstrate CI/CD Workflow
 
-## 📋 Terraform Infrastructure Components
+**Show workflow:**
+> [`.github/workflows/build-pr.yml`](../../.github/workflows/build-pr.yml)
 
-### AKS Cluster Module (`terraform/modules/aks/`)
-```hcl
-# Automatically provisions:
-- Multi-zone AKS cluster for HA
-- Auto-scaling node pools (3-10 nodes)
-- System-assigned managed identity
-- Azure CNI networking
-- Monitoring with Log Analytics
-- Maintenance windows
-- Automatic patch upgrades
-```
-
-### ArgoCD Module (`terraform/modules/argocd/`)
-```hcl
-# Deploys ArgoCD with:
-- HA configuration (2 replicas)
-- Resource limits for stability
-- Metrics enabled
-- App-of-apps pattern
-- Automated sync policies
-```
-
-## 🔄 GitOps in Action
-
-### 1. Push Change to Git
-
-```bash
-# Update image tag in git repo
-cd reliability-demo-config
-sed -i 's/tag: m1-01/tag: m1-02/g' helm/app/values.yaml
+**Create feature branch:**
+```powershell
+git checkout -b feature/update-reliability
+# Make small change to src/ReliabilityDemo/Program.cs
 git add .
-git commit -m "Update app to m1-02"
-git push
+git commit -m "Update reliability feature"
+git push origin feature/update-reliability
 ```
 
-### 2. Watch Automatic Deployment
+**In GitHub UI:**
+- Create Pull Request
+- Show PR checks running
+- Merge PR
 
-```bash
-# ArgoCD detects change within seconds
+### Step 7: Deploy with Version Tag
+
+**Show workflow:**
+> [`.github/workflows/release.yml`](../../.github/workflows/release.yml)
+
+```powershell
+# Switch back to main and pull
+git checkout main
+git pull origin main
+
+# Tag and push
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+**Monitor in GitHub Actions**
+
+### Step 8: Watch ArgoCD Sync
+
+```powershell
+# Watch pods rolling update
 kubectl get pods -n reliability-demo -w
-
-# Watch the rolling update
-NAME                                    READY   STATUS    RESTARTS   AGE
-reliability-demo-5f9b8d7c4-2xkl9       1/1     Running   0          5m
-reliability-demo-5f9b8d7c4-7hjkl       1/1     Running   0          5m
-reliability-demo-5f9b8d7c4-9mnop       1/1     Running   0          5m
-reliability-demo-6a7c9e8d5-1abcd       0/1     Pending   0          0s
-reliability-demo-6a7c9e8d5-1abcd       0/1     Init:0/1  0          1s
-reliability-demo-6a7c9e8d5-1abcd       1/1     Running   0          30s
-reliability-demo-5f9b8d7c4-2xkl9       1/1     Terminating   0      6m
 ```
 
-## 🏥 Self-Healing Demonstration
+### Step 9: Demonstrate Self-Healing
 
-### Kill a Pod - Watch it Recover
-
-```bash
+```powershell
 # Delete a pod
-kubectl delete pod -n reliability-demo -l app.kubernetes.io/name=reliability-demo | head -1
+$podName = kubectl get pods -n reliability-demo -o jsonpath='{.items[0].metadata.name}'
+kubectl delete pod $podName -n reliability-demo
 
-# Watch Kubernetes bring it back
+# Watch recovery
 kubectl get pods -n reliability-demo -w
-
-# Output shows immediate recovery:
-reliability-demo-6a7c9e8d5-1abcd   1/1     Terminating   0          2m
-reliability-demo-6a7c9e8d5-xyz123  0/1     Pending       0          0s
-reliability-demo-6a7c9e8d5-xyz123  0/1     ContainerCreating   0     1s
-reliability-demo-6a7c9e8d5-xyz123  1/1     Running       0          15s
 ```
 
-### Simulate Node Failure
+### Step 10: Configuration Drift Protection
 
-```bash
-# Cordon a node
-NODE=$(kubectl get nodes -o name | head -1)
-kubectl cordon $NODE
+```powershell
+# Manually patch deployment
+kubectl patch deployment reliability-demo-web -n reliability-demo `
+  --type='json' `
+  -p='[{"op": "add", "path": "/spec/template/spec/containers/0/env/-", "value": {"name": "DRIFT_TEST", "value": "manual-change"}}]'
 
-# Delete pods on that node
-kubectl delete pods -n reliability-demo --field-selector spec.nodeName=${NODE#node/}
-
-# Watch pods redistribute across healthy nodes
-kubectl get pods -n reliability-demo -o wide -w
+# Check ArgoCD status
+kubectl get application reliability-demo -n argocd
 ```
 
-## 🔧 Health Checks in Action
+**Wait for ArgoCD to revert the change**
 
-### Liveness Probe Configuration
-```yaml
-livenessProbe:
-  httpGet:
-    path: /api/health
-    port: 8080
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  failureThreshold: 3
+### Step 11: Deploy Broken Version
+
+```powershell
+# Update values to use broken image
+$valuesPath = "helm/app/values.yaml"
+$values = Get-Content $valuesPath
+$values = $values -replace 'tag: ".*"', 'tag: "broken-test"'
+$values | Set-Content $valuesPath
+
+# Commit and tag
+git add .
+git commit -m "Deploy broken version for testing"
+git tag v1.2.4
+git push origin main
+git push origin v1.2.4
 ```
 
-### Readiness Probe Configuration
-```yaml
-readinessProbe:
-  httpGet:
-    path: /api/health
-    port: 8080
-  initialDelaySeconds: 10
-  periodSeconds: 5
-  failureThreshold: 3
-```
-
-### Test Health Check Failure
-
-```bash
-# Simulate app failure by increasing failure rate to 100%
-curl -X POST http://<app-ip>/api/config \
-  -H "Content-Type: application/json" \
-  -d '{"connectionFailureRate": 1.0}'
-
-# Watch Kubernetes detect unhealthy pods and restart them
+```powershell
+# Watch deployment fail
 kubectl get pods -n reliability-demo -w
-
-# Pods automatically restart after 3 failed health checks
-reliability-demo-6a7c9e8d5-1abcd   1/1     Running       0          5m
-reliability-demo-6a7c9e8d5-1abcd   0/1     Running       1          5m30s
-reliability-demo-6a7c9e8d5-1abcd   1/1     Running       1          5m45s
 ```
 
-## 🔄 GitOps Rollback
+### Step 12: Emergency Rollback
 
-### Revert to Previous Version
+```powershell
+# Revert the broken change
+git revert HEAD --no-edit
+git push origin main
 
-```bash
-# Revert the commit
-cd reliability-demo-config
-git revert HEAD
-git push
-
-# Watch ArgoCD automatically rollback
-kubectl describe app reliability-demo -n argocd
-
-# Deployment automatically rolls back to m1-01
-kubectl get pods -n reliability-demo -l app.kubernetes.io/name=reliability-demo \
-  -o jsonpath='{.items[*].spec.containers[0].image}'
+# Watch ArgoCD sync back
+kubectl get pods -n reliability-demo -w
 ```
 
-## 🎯 Resource Limits & Auto-Scaling
+### Step 13: Show ArgoCD Dashboard
 
-### Resource Limits Enforced
-```yaml
-resources:
-  requests:
-    cpu: 250m
-    memory: 256Mi
-  limits:
-    cpu: 500m
-    memory: 512Mi
-```
-
-### Horizontal Pod Autoscaler
-```yaml
-autoscaling:
-  enabled: true
-  minReplicas: 6
-  maxReplicas: 20
-  targetCPUUtilizationPercentage: 80
-```
-
-### Load Test Auto-Scaling
-
-```bash
-# Generate load
-kubectl run -i --tty load-generator --rm --image=busybox --restart=Never -- \
-  /bin/sh -c "while sleep 0.01; do wget -q -O- http://reliability-demo.reliability-demo.svc.cluster.local/api/customers; done"
-
-# Watch HPA scale up
-kubectl get hpa -n reliability-demo -w
-
-NAME               REFERENCE                     TARGETS   MINPODS   MAXPODS   REPLICAS
-reliability-demo   Deployment/reliability-demo   15%/80%   6         20        6
-reliability-demo   Deployment/reliability-demo   89%/80%   6         20        6
-reliability-demo   Deployment/reliability-demo   89%/80%   6         20        9
-reliability-demo   Deployment/reliability-demo   72%/80%   6         20        12
-```
-
-## 📊 Multiple Replicas & High Availability
-
-### Pod Distribution
-```bash
-kubectl get pods -n reliability-demo -o wide
-
-NAME                                READY   NODE
-reliability-demo-6a7c9e8d5-1abcd   1/1     aks-default-12345-vmss000000
-reliability-demo-6a7c9e8d5-2bcde   1/1     aks-default-12345-vmss000001
-reliability-demo-6a7c9e8d5-3cdef   1/1     aks-default-12345-vmss000002
-reliability-demo-6a7c9e8d5-4defg   1/1     aks-default-12345-vmss000000
-reliability-demo-6a7c9e8d5-5efgh   1/1     aks-default-12345-vmss000001
-reliability-demo-6a7c9e8d5-6fghi   1/1     aks-default-12345-vmss000002
-```
-
-### Pod Disruption Budget
-```yaml
-podDisruptionBudget:
-  enabled: true
-  minAvailable: 50%
-```
-
-## 🎉 Benefits Over Manual Deployment
-
-| Aspect | Manual Process | Automated with GitOps |
-|--------|---------------|----------------------|
-| **Deployment Time** | 45-60 minutes | 10 minutes |
-| **Error Rate** | ~40% chance of failure | <1% failure rate |
-| **Rollback Time** | 2-4 hours | 30 seconds |
-| **Health Monitoring** | Manual checks | Automatic health checks |
-| **Scaling** | Manual kubectl commands | Auto-scaling based on load |
-| **Failure Recovery** | Manual intervention | Self-healing |
-| **Configuration Drift** | Common | Impossible (Git is truth) |
-| **Audit Trail** | Scattered logs | Complete Git history |
-| **Multi-Environment** | Copy-paste errors | Template-based consistency |
-
-## 🔍 Observability & Monitoring
-
-### View ArgoCD Dashboard
-
-```bash
+```powershell
 # Get ArgoCD password
-kubectl -n argocd get secret argocd-initial-admin-secret \
-  -o jsonpath="{.data.password}" | base64 -d
+$argoPassword = kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}"
+$argoPassword = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($argoPassword))
+
+Write-Host "ArgoCD Password: $argoPassword"
 
 # Port forward
 kubectl port-forward svc/argocd-server -n argocd 8080:443
-
-# Access https://localhost:8080
-# Username: admin
 ```
 
-### Application Health in ArgoCD
-- ✅ Sync Status: Synced
-- ✅ Health Status: Healthy
-- ✅ All resources deployed
-- ✅ Automatic refresh every 3 minutes
+**Open https://localhost:8080 in browser**
+- Username: admin
+- Show application sync status
+- Show health status
 
-## 🚀 Advanced GitOps Features
+### Step 14: Show Metrics Comparison
 
-### Progressive Delivery
-```yaml
-# Blue-green deployment
-strategy:
-  blueGreen:
-    activeService: reliability-demo-active
-    previewService: reliability-demo-preview
-    autoPromotionEnabled: false
+```powershell
+# Display comparison
+@"
+Deployment Metrics Comparison:
+
+Manual Process (Demo 1):
+- Deployment Time: 10+ minutes with issues
+- Error Rate: Multiple failures per deployment  
+- Rollback Time: Manual process, hours
+- Manual Steps: 10+ error-prone steps
+
+Automated GitOps (Demo 2):
+- Deployment Time: 2 minutes, zero downtime
+- Error Rate: Failures prevented automatically
+- Rollback Time: 30 seconds with git revert
+- Manual Steps: 1 git tag command
+"@ | Write-Host -ForegroundColor Green
 ```
 
-### Automated Rollback on Failure
-```yaml
-syncPolicy:
-  automated:
-    prune: true
-    selfHeal: true
-  retry:
-    limit: 5
-    backoff:
-      duration: 5s
-      factor: 2
-```
+## Post-Demo Cleanup
 
-## 📈 Metrics & Success
+**Via GitHub Actions:**
+1. Go to Actions tab
+2. Run "Deploy Infrastructure" workflow
+3. Select:
+   - Environment: `production`
+   - Action: `destroy`
+4. Confirm destruction
 
-- **MTTR**: 45 minutes → 2 minutes (95% improvement)
-- **Deployment Success**: 60% → 99.9%
-- **Manual Steps**: 47 → 1
-- **Rollback Time**: 2 hours → 30 seconds
-- **On-Call Stress**: Eliminated
+## Files to Have Ready
 
-## 🎯 Key Takeaways
+1. [`terraform/main.tf`](../../terraform/main.tf)
+2. [`helm/app/templates/deployment.yaml`](../../helm/app/templates/deployment.yaml)
+3. [`helm/app/values.yaml`](../../helm/app/values.yaml)
+4. [`argocd-apps/reliability-demo.yaml`](../../argocd-apps/reliability-demo.yaml)
+5. [`.github/workflows/release.yml`](../../.github/workflows/release.yml)
+6. [`.github/workflows/deploy-infrastructure.yml`](../../.github/workflows/deploy-infrastructure.yml)
 
-1. **Infrastructure as Code**: Entire cluster defined in Terraform
-2. **GitOps**: Git commits trigger automatic deployments
-3. **Self-Healing**: Kubernetes + ArgoCD automatically fix issues
-4. **Health Checks**: Proactive problem detection
-5. **Resource Limits**: Prevent resource starvation
-6. **Auto-Scaling**: Handle load spikes automatically
-7. **High Availability**: Multiple replicas across zones
-8. **One-Click Rollback**: Git revert = instant rollback
+## Pre-Recording Checklist
 
-## Cleanup
-
-```bash
-# Destroy all resources
-cd terraform
-terraform destroy -auto-approve
-
-# Verify cleanup
-az group list --query "[?contains(name, 'reliability-demo')]"
-```
-
-## Next Steps
-
-In Demo 3, we'll add:
-- Prometheus metrics collection
-- Grafana dashboards
-- Alert rules for proactive monitoring
-- SLO tracking and error budgets
+- [ ] Azure credentials configured in GitHub secrets
+- [ ] Broken test image pushed to registry
+- [ ] Terminal and VS Code arranged side by side
+- [ ] GitHub Actions tab open in browser
+- [ ] Test all PowerShell commands
+- [ ] Clear terminal history
