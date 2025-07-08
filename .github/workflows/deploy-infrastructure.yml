@@ -1,6 +1,6 @@
 name: Deploy Infrastructure
 
-run-name: 'Deploy Infrastructure: ${{ inputs.action == "apply" && "Apply" || "Destroy" }} ${{ inputs.environment == "demo" && "Demo" || inputs.environment == "staging" && "Staging" || "Production" }}'
+run-name: Deploy Infrastructure ${{ inputs.action }} ${{ inputs.environment }}
 
 on:
   workflow_dispatch:
