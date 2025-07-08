@@ -90,7 +90,7 @@ variable "enable_arm64_nodes" {
 variable "arm64_node_vm_size" {
   description = "VM size for ARM64 node pool"
   type        = string
-  default     = "Standard_D2ps_v5"  # ARM64-based VM
+  default     = "Standard_D2ps_v5" # ARM64-based VM
 }
 
 variable "arm64_node_count" {

@@ -1,6 +1,6 @@
 terraform {
   required_version = ">= 1.5.0"
-  
+
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -15,7 +15,7 @@ terraform {
       version = "~> 2.11.0"
     }
   }
-  
+
   backend "azurerm" {
     resource_group_name  = "terraform-state-rg"
     storage_account_name = "tfstatereliability"
@@ -26,7 +26,7 @@ terraform {
 
 provider "azurerm" {
   skip_provider_registration = true
-  
+
   features {
     resource_group {
       prevent_deletion_if_contains_resources = false
@@ -54,7 +54,7 @@ provider "helm" {
 resource "azurerm_resource_group" "main" {
   name     = var.resource_group_name
   location = var.location
-  
+
   tags = var.tags
 }
 
@@ -79,7 +79,7 @@ resource "azurerm_container_registry" "main" {
 
   # Enable public network access
   public_network_access_enabled = true
-  
+
   # Configure network rules if needed
   network_rule_set {
     default_action = "Allow"
@@ -98,30 +98,30 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
 # AKS Cluster
 module "aks" {
   source = "./modules/aks"
-  
+
   cluster_name        = var.cluster_name
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   kubernetes_version  = var.kubernetes_version
-  
+
   node_count     = var.node_count
   node_vm_size   = var.node_vm_size
   node_disk_size = var.node_disk_size
-  
+
   enable_auto_scaling = var.enable_auto_scaling
   min_node_count      = var.min_node_count
   max_node_count      = var.max_node_count
-  
+
   # ARM64 node pool configuration
-  enable_arm64_nodes    = var.enable_arm64_nodes
-  arm64_node_vm_size    = var.arm64_node_vm_size
-  arm64_node_count      = var.arm64_node_count
-  arm64_min_node_count  = var.arm64_min_node_count
-  arm64_max_node_count  = var.arm64_max_node_count
-  
+  enable_arm64_nodes   = var.enable_arm64_nodes
+  arm64_node_vm_size   = var.arm64_node_vm_size
+  arm64_node_count     = var.arm64_node_count
+  arm64_min_node_count = var.arm64_min_node_count
+  arm64_max_node_count = var.arm64_max_node_count
+
   # Enable monitoring with Log Analytics
   log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
-  
+
   tags = var.tags
 }
 
@@ -130,7 +130,7 @@ resource "kubernetes_namespace" "reliability_demo" {
   metadata {
     name = "reliability-demo"
   }
-  
+
   depends_on = [module.aks]
 }
 
@@ -138,7 +138,7 @@ resource "kubernetes_namespace" "argocd" {
   metadata {
     name = "argocd"
   }
-  
+
   depends_on = [module.aks]
 }
 
@@ -146,16 +146,16 @@ resource "kubernetes_namespace" "monitoring" {
   metadata {
     name = "monitoring"
   }
-  
+
   depends_on = [module.aks]
 }
 
 # ArgoCD
 module "argocd" {
   source = "./modules/argocd"
-  
+
   namespace = kubernetes_namespace.argocd.metadata[0].name
-  
+
   depends_on = [module.aks]
 }
 
@@ -164,17 +164,17 @@ resource "helm_release" "argocd_apps" {
   name      = "argocd-apps"
   namespace = kubernetes_namespace.argocd.metadata[0].name
   chart     = "./charts/argocd-apps"
-  
+
   set {
     name  = "spec.source.repoURL"
     value = var.git_repo_url
   }
-  
+
   set {
     name  = "spec.source.targetRevision"
     value = var.git_target_revision
   }
-  
+
   depends_on = [module.argocd]
 }
 
