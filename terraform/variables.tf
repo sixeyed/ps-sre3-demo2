@@ -1,7 +1,7 @@
 variable "resource_group_name" {
   description = "Name of the Azure resource group"
   type        = string
-  default     = "reliability-demo-rg"
+  default     = "reliability-demo-demo"
 }
 
 variable "location" {
@@ -13,7 +13,7 @@ variable "location" {
 variable "cluster_name" {
   description = "Name of the AKS cluster"
   type        = string
-  default     = "reliability-demo-aks"
+  default     = "aks-reliability-demo-demo"
 }
 
 variable "kubernetes_version" {
@@ -74,7 +74,7 @@ variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
   default = {
-    Environment = "Demo"
+    Environment = "demo"
     ManagedBy   = "Terraform"
     Project     = "ReliabilityDemo"
   }
