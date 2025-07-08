@@ -32,7 +32,7 @@ Get-ChildItem -Directory | Select-Object Name
 
 **Files to show:**
 > [`terraform/modules/argocd/main.tf`](../../terraform/modules/argocd/main.tf)
-> [`argocd-apps/reliability-demo.yaml`](../../argocd-apps/reliability-demo.yaml)
+> [`terraform/charts/argocd-apps/templates/reliability-demo-app.yaml`](../../terraform/charts/argocd-apps/templates/reliability-demo-app.yaml)
 
 ### Step 4: Deploy Infrastructure via GitHub Actions
 

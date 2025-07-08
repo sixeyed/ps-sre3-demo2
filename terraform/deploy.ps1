@@ -185,7 +185,6 @@ switch ($Action) {
             -var="cluster_name=$clusterName" `
             -var="acr_name=$acrName" `
             -var="location=$Location" `
-            -var="tags={Environment=\""$Environment\"",ManagedBy=\""Terraform\"",Project=\""ReliabilityDemo\""}" `
             -out=tfplan
         
         if ($LASTEXITCODE -eq 0) {
@@ -219,7 +218,6 @@ switch ($Action) {
                 "-var=cluster_name=$clusterName"
                 "-var=acr_name=$acrName"
                 "-var=location=$Location"
-                "-var=tags={Environment=\""$Environment\"",ManagedBy=\""Terraform\"",Project=\""ReliabilityDemo\""}"
                 "-out=tfplan"
             )
             
@@ -300,15 +298,13 @@ switch ($Action) {
                 -var="resource_group_name=$resourceGroupName" `
                 -var="cluster_name=$clusterName" `
                 -var="acr_name=$acrName" `
-                -var="location=$Location" `
-                -var="tags={Environment=\""$Environment\"",ManagedBy=\""Terraform\"",Project=\""ReliabilityDemo\""}"
+                -var="location=$Location"
         } else {
             terraform destroy `
                 -var="resource_group_name=$resourceGroupName" `
                 -var="cluster_name=$clusterName" `
                 -var="acr_name=$acrName" `
-                -var="location=$Location" `
-                -var="tags={Environment=\""$Environment\"",ManagedBy=\""Terraform\"",Project=\""ReliabilityDemo\""}"
+                -var="location=$Location"
         }
         
         if ($LASTEXITCODE -eq 0) {

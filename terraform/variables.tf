@@ -61,7 +61,7 @@ variable "max_node_count" {
 variable "git_repo_url" {
   description = "Git repository URL for ArgoCD apps"
   type        = string
-  default     = "https://github.com/sixeyed/ps-sre3-demo2"
+  default     = "https://github.com/sixeyed/ps-sre3-demo2.git"
 }
 
 variable "git_target_revision" {
