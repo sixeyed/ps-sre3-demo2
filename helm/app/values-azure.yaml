@@ -19,8 +19,6 @@ web:
     annotations:
       service.beta.kubernetes.io/azure-dns-label-name: "reliability-demo-m2"
       service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: "/api/health"
-  ingress:
-    enabled: false
   resources:
     requests:
       memory: "256Mi"

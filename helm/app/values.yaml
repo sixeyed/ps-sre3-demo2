@@ -22,11 +22,6 @@ web:
     type: LoadBalancer
     port: 80  # Default port (can be overridden)
     targetPort: 8080
-  ingress:
-    enabled: false
-    annotations: {}
-    hosts: []
-    tls: []
   resources:
     requests:
       memory: "256Mi"
