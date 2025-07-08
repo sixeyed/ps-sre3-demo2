@@ -58,6 +58,17 @@ resource "azurerm_resource_group" "main" {
   tags = var.tags
 }
 
+# Log Analytics Workspace for AKS monitoring
+resource "azurerm_log_analytics_workspace" "main" {
+  name                = "${var.cluster_name}-logs"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+
+  tags = var.tags
+}
+
 # AKS Cluster
 module "aks" {
   source = "./modules/aks"
@@ -81,6 +92,9 @@ module "aks" {
   arm64_node_count      = var.arm64_node_count
   arm64_min_node_count  = var.arm64_min_node_count
   arm64_max_node_count  = var.arm64_max_node_count
+  
+  # Enable monitoring with Log Analytics
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
   
   tags = var.tags
 }
@@ -159,4 +173,12 @@ output "argocd_server_url" {
 output "argocd_initial_password" {
   value     = module.argocd.initial_admin_password
   sensitive = true
+}
+
+output "log_analytics_workspace_name" {
+  value = azurerm_log_analytics_workspace.main.name
+}
+
+output "log_analytics_workspace_id" {
+  value = azurerm_log_analytics_workspace.main.id
 }
