@@ -29,21 +29,16 @@ resource "azurerm_kubernetes_cluster" "main" {
     outbound_type     = "loadBalancer"
   }
 
-  # Enable monitoring
-  oms_agent {
-    log_analytics_workspace_id = var.log_analytics_workspace_id
+  # Enable monitoring (only if workspace ID is provided)
+  dynamic "oms_agent" {
+    for_each = var.log_analytics_workspace_id != "" ? [1] : []
+    content {
+      log_analytics_workspace_id = var.log_analytics_workspace_id
+    }
   }
 
   # Auto-upgrade for patch versions
   automatic_channel_upgrade = "patch"
-  
-  # Enable maintenance window
-  maintenance_window {
-    allowed {
-      day   = "Sunday"
-      hours = [2, 6]
-    }
-  }
 
   tags = var.tags
 }

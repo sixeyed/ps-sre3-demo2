@@ -11,8 +11,7 @@ resource "helm_release" "argocd" {
       server = {
         # Enable server-side health checks
         extraArgs = [
-          "--insecure",
-          "--disable-auth"  # For demo purposes only
+          "--insecure"  # Disable TLS but keep authentication
         ]
         
         # Resource limits for self-healing demo
@@ -121,36 +120,9 @@ data "kubernetes_secret" "argocd_initial_admin_secret" {
 }
 
 # Create app-of-apps pattern for GitOps
-resource "kubernetes_manifest" "app_of_apps" {
-  manifest = {
-    apiVersion = "argoproj.io/v1alpha1"
-    kind       = "Application"
-    metadata = {
-      name      = "app-of-apps"
-      namespace = var.namespace
-    }
-    spec = {
-      project = "default"
-      source = {
-        repoURL        = var.git_repo_url
-        targetRevision = var.git_target_revision
-        path           = "argocd-apps"
-      }
-      destination = {
-        server    = "https://kubernetes.default.svc"
-        namespace = var.namespace
-      }
-      syncPolicy = {
-        automated = {
-          prune    = true
-          selfHeal = true
-        }
-        syncOptions = [
-          "CreateNamespace=true"
-        ]
-      }
-    }
-  }
-  
-  depends_on = [helm_release.argocd]
-}
+# Note: App-of-apps pattern commented out due to chicken-and-egg problem
+# The kubernetes_manifest resource requires API access during plan phase,
+# which fails when the cluster doesn't exist yet.
+# 
+# This will be configured via the ArgoCD applications in the main module
+# using the helm chart approach instead.

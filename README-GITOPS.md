@@ -12,7 +12,39 @@ This guide covers the GitOps deployment process using GitHub Actions and ArgoCD 
 
 ### Azure Setup
 
-#### 1. Create Service Principal for GitHub Actions
+#### 1. Register Required Azure Providers
+
+```powershell
+# Register required Azure resource providers
+Write-Host "Registering Azure resource providers..." -ForegroundColor Cyan
+
+$providers = @(
+    "Microsoft.ContainerService",     # For AKS clusters
+    "Microsoft.Storage",              # For storage accounts (Terraform state)
+    "Microsoft.Network",              # For virtual networks
+    "Microsoft.Compute",              # For virtual machines
+    "Microsoft.ManagedIdentity",      # For managed identities
+    "Microsoft.Authorization"         # For RBAC
+)
+
+foreach ($provider in $providers) {
+    Write-Host "Registering $provider..." -ForegroundColor Yellow
+    $result = az provider register --namespace $provider 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✓ $provider registered successfully" -ForegroundColor Green
+    } else {
+        Write-Host "⚠ $provider $result" -ForegroundColor Yellow
+    }
+}
+
+# Check registration status
+Write-Host "`nChecking provider registration status:" -ForegroundColor Cyan
+az provider list --query "[?namespace=='Microsoft.ContainerService' || namespace=='Microsoft.Storage' || namespace=='Microsoft.Network' || namespace=='Microsoft.Compute' || namespace=='Microsoft.ManagedIdentity' || namespace=='Microsoft.Authorization'].{Provider:namespace, Status:registrationState}" --output table
+
+Write-Host "`nNote: Provider registration can take a few minutes. Continue with the next steps while they register." -ForegroundColor Green
+```
+
+#### 2. Create Service Principal for GitHub Actions
 
 ```powershell
 # Set your subscription ID
@@ -29,7 +61,7 @@ $sp = az ad sp create-for-rbac `
 $sp | ConvertFrom-Json | ConvertTo-Json
 ```
 
-#### 2. Create Terraform State Backend
+#### 3. Create Terraform State Backend
 
 ```powershell
 # Create resource group for Terraform state
@@ -51,7 +83,7 @@ az storage container create `
 Write-Host "Storage Account Name: $storageAccount"
 ```
 
-#### 3. Configure GitHub Secrets
+#### 4. Configure GitHub Secrets
 
 Go to your GitHub repository **Settings** → **Secrets and variables** → **Actions** and add:
 
