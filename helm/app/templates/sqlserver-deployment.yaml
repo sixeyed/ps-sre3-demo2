@@ -32,6 +32,9 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      # Security context for SQL Server permissions
+      securityContext:
+        fsGroup: 10001  # mssql user group
       containers:
         - name: sqlserver
           image: "{{ .Values.sqlserver.image.repository }}:{{ .Values.sqlserver.image.tag }}"
