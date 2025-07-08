@@ -59,14 +59,6 @@ jobs:
             "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
           }
 
-    - name: Terraform Init
-      run: |
-        terraform init \
-          -backend-config="resource_group_name=${{ secrets.TERRAFORM_STATE_RG }}" \
-          -backend-config="storage_account_name=${{ secrets.TERRAFORM_STATE_SA }}" \
-          -backend-config="container_name=${{ secrets.TERRAFORM_STATE_CONTAINER }}" \
-          -backend-config="key=${{ inputs.environment }}.terraform.tfstate"
-
     - name: Terraform Format Check
       if: inputs.action == 'plan'
       run: terraform fmt -check
@@ -75,41 +67,18 @@ jobs:
       if: inputs.action == 'plan'
       run: terraform validate
 
-    - name: Terraform Plan
-      if: inputs.action == 'plan'
+    - name: Execute Terraform Action
+      shell: pwsh
       run: |
-        terraform plan \
-          -var="environment=${{ inputs.environment }}" \
-          -var="location=${{ vars.AZURE_LOCATION || 'eastus' }}" \
-          -out=tfplan
-
-    - name: Upload Plan
-      if: inputs.action == 'plan'
-      uses: actions/upload-artifact@v3
-      with:
-        name: tfplan-${{ inputs.environment }}
-        path: terraform/tfplan
-
-    - name: Terraform Apply
-      if: inputs.action == 'apply'
-      run: |
-        # Download plan from previous run if available
-        if [ -f "tfplan" ]; then
-          echo "Using existing plan file"
-          terraform apply -auto-approve tfplan
-        else
-          echo "No plan file found, creating new plan and applying"
-          terraform apply -auto-approve \
-            -var="environment=${{ inputs.environment }}" \
-            -var="location=${{ vars.AZURE_LOCATION || 'eastus' }}"
-        fi
-
-    - name: Terraform Destroy
-      if: inputs.action == 'destroy'
-      run: |
-        terraform destroy -auto-approve \
-          -var="environment=${{ inputs.environment }}" \
-          -var="location=${{ vars.AZURE_LOCATION || 'eastus' }}"
+        # Run the deploy script
+        ./deploy.ps1 `
+          -Action ${{ inputs.action }} `
+          -Environment ${{ inputs.environment }} `
+          -Location "${{ vars.AZURE_LOCATION || 'westeurope' }}" `
+          -AutoApprove `
+          -TerraformStateRG "${{ secrets.TERRAFORM_STATE_RG }}" `
+          -TerraformStateSA "${{ secrets.TERRAFORM_STATE_SA }}" `
+          -TerraformStateContainer "${{ secrets.TERRAFORM_STATE_CONTAINER }}"
 
     - name: Save Terraform Outputs
       if: inputs.action == 'apply'
@@ -121,16 +90,15 @@ jobs:
         echo '```' >> $GITHUB_STEP_SUMMARY
         
         # Save specific outputs for other workflows
-        echo "aks_cluster_name=$(terraform output -raw aks_cluster_name)" >> $GITHUB_OUTPUT
+        echo "aks_cluster_name=$(terraform output -raw cluster_name)" >> $GITHUB_OUTPUT
         echo "resource_group_name=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
-        echo "argocd_namespace=$(terraform output -raw argocd_namespace)" >> $GITHUB_OUTPUT
 
     - name: Get AKS Credentials
       if: inputs.action == 'apply'
       run: |
         az aks get-credentials \
           --resource-group $(terraform output -raw resource_group_name) \
-          --name $(terraform output -raw aks_cluster_name) \
+          --name $(terraform output -raw cluster_name) \
           --overwrite-existing
 
     - name: Verify ArgoCD Installation
@@ -146,6 +114,55 @@ jobs:
         kubectl get applications -n argocd >> $GITHUB_STEP_SUMMARY
         echo '```' >> $GITHUB_STEP_SUMMARY
 
+    - name: Get Load Balancer IP Addresses
+      if: inputs.action == 'apply'
+      run: |
+        echo "## Load Balancer IP Addresses" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Wait for load balancer IPs to be assigned (up to 5 minutes)
+        echo "Waiting for load balancer IPs to be assigned..." >> $GITHUB_STEP_SUMMARY
+        
+        # Get ArgoCD Server IP
+        for i in {1..30}; do
+          ARGOCD_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+          if [ ! -z "$ARGOCD_IP" ] && [ "$ARGOCD_IP" != "null" ]; then
+            break
+          fi
+          echo "Waiting for ArgoCD load balancer IP... (attempt $i/30)"
+          sleep 10
+        done
+        
+        # Get Reliability Demo Web App IP
+        for i in {1..30}; do
+          WEB_APP_IP=$(kubectl get svc reliability-demo-web -n reliability-demo -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+          if [ ! -z "$WEB_APP_IP" ] && [ "$WEB_APP_IP" != "null" ]; then
+            break
+          fi
+          echo "Waiting for Web App load balancer IP... (attempt $i/30)"
+          sleep 10
+        done
+        
+        echo "### ArgoCD Server" >> $GITHUB_STEP_SUMMARY
+        if [ ! -z "$ARGOCD_IP" ] && [ "$ARGOCD_IP" != "null" ]; then
+          echo "- **IP Address:** $ARGOCD_IP" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL:** https://$ARGOCD_IP" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- **Status:** Load balancer IP not yet assigned" >> $GITHUB_STEP_SUMMARY
+          echo "- **Access:** kubectl port-forward svc/argocd-server -n argocd 8080:443" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "### Reliability Demo Web App" >> $GITHUB_STEP_SUMMARY
+        if [ ! -z "$WEB_APP_IP" ] && [ "$WEB_APP_IP" != "null" ]; then
+          echo "- **IP Address:** $WEB_APP_IP" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL:** http://$WEB_APP_IP" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- **Status:** Load balancer IP not yet assigned" >> $GITHUB_STEP_SUMMARY
+          echo "- **Access:** kubectl port-forward svc/reliability-demo-web -n reliability-demo 8080:80" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+
     - name: Get ArgoCD Access Info
       if: inputs.action == 'apply'
       run: |
@@ -154,16 +171,8 @@ jobs:
         
         # Get ArgoCD password
         ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
-        echo "### Admin Password" >> $GITHUB_STEP_SUMMARY
+        echo "### Admin Credentials" >> $GITHUB_STEP_SUMMARY
         echo '```' >> $GITHUB_STEP_SUMMARY
         echo "Username: admin" >> $GITHUB_STEP_SUMMARY
         echo "Password: ${ARGOCD_PASSWORD}" >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
-        
-        # Get service info
-        echo "### Access ArgoCD" >> $GITHUB_STEP_SUMMARY
-        echo '```bash' >> $GITHUB_STEP_SUMMARY
-        echo "# Port forward to access ArgoCD UI" >> $GITHUB_STEP_SUMMARY
-        echo "kubectl port-forward svc/argocd-server -n argocd 8080:443" >> $GITHUB_STEP_SUMMARY
-        echo "# Access at https://localhost:8080" >> $GITHUB_STEP_SUMMARY
         echo '```' >> $GITHUB_STEP_SUMMARY

@@ -1,5 +1,12 @@
 # Reliability Demo application configuration
 
+# Image registry configuration
+imageRegistry:
+  # Container registry domain (e.g., docker.io, ghcr.io, myregistry.azurecr.io)
+  domain: "sixeyed"
+  # Repository name (e.g., sixeyed, sixeyed-staging)
+  repository: "sixeyed"
+
 # Architecture configuration
 architecture:
   # Target CPU architecture: amd64 or arm64
@@ -14,7 +21,7 @@ affinity: {}
 web:
   replicaCount: 6
   image:
-    repository: sixeyed/reliability-demo
+    imageName: reliability-demo
     tag: "m2"
     pullPolicy: Always
   service:
@@ -58,7 +65,7 @@ web:
 worker:
   replicaCount: 2
   image:
-    repository: sixeyed/reliability-demo-worker
+    imageName: reliability-demo-worker
     tag: "m2"
     pullPolicy: Always
   resources:

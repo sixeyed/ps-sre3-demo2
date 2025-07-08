@@ -407,6 +407,7 @@ override.tf.json
 terraform.rc
 crash.log
 crash.*.log
+tfplan
 
 # Terraform test cache
 terraform/test/.terraform-cache/

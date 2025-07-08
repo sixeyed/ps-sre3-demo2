@@ -14,7 +14,7 @@ spec:
     helm:
       valueFiles:
         - values.yaml        # Base configuration
-        - values-azure.yaml  # Azure-specific overrides
+        - values-azure.yaml  # Azure-specific overrides including ACR registry
   
   destination:
     server: https://kubernetes.default.svc

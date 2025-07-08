@@ -9,9 +9,9 @@ on:
       - '.github/workflows/**'
 
 env:
-  REGISTRY: ghcr.io
-  STAGING_WEB_IMAGE_NAME: ${{ github.repository }}-staging/reliability-demo
-  STAGING_WORKER_IMAGE_NAME: ${{ github.repository }}-staging/reliability-demo-worker
+  ACR_REGISTRY: reliabilitydemoacrdemo.azurecr.io
+  STAGING_WEB_IMAGE_NAME: sixeyed-staging/reliability-demo
+  STAGING_WORKER_IMAGE_NAME: sixeyed-staging/reliability-demo-worker
 
 jobs:
   build:
@@ -24,21 +24,29 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: |
+          {
+            "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+          }
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Log in to Azure Container Registry
+      run: |
+        az acr login --name reliabilitydemoacrdemo
 
     - name: Extract metadata for staging web image
       id: meta-web-staging
       uses: docker/metadata-action@v5
       with:
-        images: ${{ env.REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}
+        images: ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}
         tags: |
           type=ref,event=pr
           type=sha,prefix=pr-${{ github.event.number }}-
@@ -47,7 +55,7 @@ jobs:
       id: meta-worker-staging
       uses: docker/metadata-action@v5
       with:
-        images: ${{ env.REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}
+        images: ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}
         tags: |
           type=ref,event=pr
           type=sha,prefix=pr-${{ github.event.number }}-
@@ -114,8 +122,8 @@ jobs:
             body: `## 🔍 Build Results for PR #${{ github.event.number }}
             
             ✅ **Staging Images Built and Pushed**
-            - Web API: \`${{ env.REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}:pr-${{ github.event.number }}\`
-            - Worker: \`${{ env.REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}:pr-${{ github.event.number }}\`
+            - Web API: \`${{ env.ACR_REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}:pr-${{ github.event.number }}\`
+            - Worker: \`${{ env.ACR_REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}:pr-${{ github.event.number }}\`
             
             ✅ **Helm Chart Validation Passed**
             - Linting: Passed
@@ -129,15 +137,16 @@ jobs:
             \`\`\`bash
             # Deploy to staging with these images
             helm upgrade staging-demo ./helm/app \\
-              --set web.image.repository=${{ env.REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }} \\
+              --set imageRegistry.domain=${{ env.ACR_REGISTRY }} \\
+              --set imageRegistry.repository=sixeyed-staging \\
               --set web.image.tag=pr-${{ github.event.number }} \\
-              --set worker.image.repository=${{ env.REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }} \\
               --set worker.image.tag=pr-${{ github.event.number }}
             \`\`\`
             
             🎯 **Ready for Review**
             When this PR is merged and tagged with a version (e.g., \`v1.2.3\`), the release workflow will:
-            1. Build and push production images to GHCR
-            2. Update Helm chart versions
-            3. Trigger ArgoCD deployment to production`
+            1. Pull staging images from ACR
+            2. Tag and push production images to ACR production repository
+            3. Update Helm chart versions
+            4. Trigger ArgoCD deployment to production`
           })

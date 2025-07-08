@@ -29,3 +29,8 @@ output "node_resource_group" {
   description = "The name of the auto-generated resource group for nodes"
   value       = azurerm_kubernetes_cluster.main.node_resource_group
 }
+
+output "kubelet_identity_object_id" {
+  description = "The object ID of the kubelet identity"
+  value       = azurerm_kubernetes_cluster.main.kubelet_identity[0].object_id
+}

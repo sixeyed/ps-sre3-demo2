@@ -24,9 +24,9 @@ Get-ChildItem -Directory | Select-Object Name
 ### Step 2: Show Helm Chart Improvements
 
 **Files to show:**
-> [`helm/app/templates/deployment.yaml`](../../helm/app/templates/deployment.yaml) - Navigate to health check sections
-> [`helm/app/values.yaml`](../../helm/app/values.yaml) - Show probe configuration
-> [`helm/app/templates/hpa.yaml`](../../helm/app/templates/hpa.yaml) - Show autoscaling
+> [`helm/app/templates/web-deployment.yaml`](../../helm/app/templates/web-deployment.yaml) - Navigate to health check sections
+> [`helm/app/values.yaml`](../../helm/app/values.yaml) - Show probe configuration and autoscaling
+> [`helm/app/templates/web-hpa.yaml`](../../helm/app/templates/web-hpa.yaml) - Show autoscaling configuration
 
 ### Step 3: Show ArgoCD Configuration
 
@@ -45,21 +45,28 @@ Get-ChildItem -Directory | Select-Object Name
 3. Select "Deploy Infrastructure" workflow
 4. Click "Run workflow"
 5. Select:
-   - Environment: `production`
+   - Environment: `demo`
    - Action: `apply`
 6. Click "Run workflow"
 
 **Monitor deployment progress in GitHub Actions UI**
+- Wait for ACR to be provisioned
+- Watch AKS cluster creation
+- Verify ArgoCD installation
+- Note the load balancer IP addresses displayed in the workflow summary
 
 ### Step 5: Verify Infrastructure
 
 ```powershell
 # Once deployment completes, get AKS credentials
-az aks get-credentials --resource-group reliability-demo-prod --name aks-reliability-demo-prod
+az aks get-credentials --resource-group reliability-demo-demo --name aks-reliability-demo-demo
 
 # Verify cluster
 kubectl get nodes
 kubectl get ns
+
+# Check ACR access
+az acr list --query "[].{Name:name,LoginServer:loginServer}" -o table
 ```
 
 ### Step 6: Demonstrate CI/CD Workflow
@@ -78,7 +85,8 @@ git push origin feature/update-reliability
 
 **In GitHub UI:**
 - Create Pull Request
-- Show PR checks running
+- Show PR checks running (build-pr.yml workflow)
+- Note staging images pushed to ACR sixeyed-staging repository
 - Merge PR
 
 ### Step 7: Deploy with Version Tag
@@ -96,50 +104,58 @@ git tag v1.2.3
 git push origin v1.2.3
 ```
 
-**Monitor in GitHub Actions**
+**Monitor in GitHub Actions:**
+- Watch staging images get promoted to production repository (sixeyed)
+- Helm chart values.yaml gets updated with new version and ACR registry
+- Changes committed back to main branch
+- GitHub release created
 
 ### Step 8: Watch ArgoCD Sync
 
 ```powershell
-# Watch pods rolling update
+# Watch ArgoCD detect changes and sync
+kubectl get applications -n argocd -w
+
+# Watch pods rolling update (in separate terminal)
 kubectl get pods -n reliability-demo -w
 ```
 
 ### Step 9: Demonstrate Self-Healing
 
 ```powershell
-# Delete a pod
-$podName = kubectl get pods -n reliability-demo -o jsonpath='{.items[0].metadata.name}'
+# Delete a web pod to simulate crash
+$podName = (kubectl get pods -n reliability-demo -l app.kubernetes.io/component=web -o jsonpath='{.items[0].metadata.name}')
 kubectl delete pod $podName -n reliability-demo
 
-# Watch recovery
+# Watch Kubernetes automatically create replacement
 kubectl get pods -n reliability-demo -w
 ```
 
 ### Step 10: Configuration Drift Protection
 
 ```powershell
-# Manually patch deployment
-kubectl patch deployment reliability-demo-web -n reliability-demo `
+# Manually patch web deployment to add environment variable
+kubectl patch deployment reliability-demo -n reliability-demo `
   --type='json' `
   -p='[{"op": "add", "path": "/spec/template/spec/containers/0/env/-", "value": {"name": "DRIFT_TEST", "value": "manual-change"}}]'
 
-# Check ArgoCD status
+# Check ArgoCD detects drift
 kubectl get application reliability-demo -n argocd
+kubectl describe application reliability-demo -n argocd
 ```
 
-**Wait for ArgoCD to revert the change**
+**Wait for ArgoCD to detect drift and automatically revert the change (selfHeal: true)**
 
 ### Step 11: Deploy Broken Version
 
 ```powershell
-# Update values to use broken image
+# Update values to use broken image (simulate broken release)
 $valuesPath = "helm/app/values.yaml"
 $values = Get-Content $valuesPath
-$values = $values -replace 'tag: ".*"', 'tag: "broken-test"'
+$values = $values -replace 'imageName: reliability-demo', 'imageName: broken-app'
 $values | Set-Content $valuesPath
 
-# Commit and tag
+# Commit and tag broken version
 git add .
 git commit -m "Deploy broken version for testing"
 git tag v1.2.4
@@ -148,8 +164,11 @@ git push origin v1.2.4
 ```
 
 ```powershell
-# Watch deployment fail
+# Watch deployment fail - new pods will be created but fail readiness probes
 kubectl get pods -n reliability-demo -w
+
+# Check readiness probe failures
+kubectl describe pods -n reliability-demo -l app.kubernetes.io/component=web
 ```
 
 ### Step 12: Emergency Rollback
@@ -208,24 +227,29 @@ Automated GitOps (Demo 2):
 1. Go to Actions tab
 2. Run "Deploy Infrastructure" workflow
 3. Select:
-   - Environment: `production`
+   - Environment: `demo`
    - Action: `destroy`
 4. Confirm destruction
+
+**Note:** This will destroy the entire AKS cluster, ACR, and all associated resources
 
 ## Files to Have Ready
 
 1. [`terraform/main.tf`](../../terraform/main.tf)
-2. [`helm/app/templates/deployment.yaml`](../../helm/app/templates/deployment.yaml)
+2. [`helm/app/templates/web-deployment.yaml`](../../helm/app/templates/web-deployment.yaml)
 3. [`helm/app/values.yaml`](../../helm/app/values.yaml)
-4. [`argocd-apps/reliability-demo.yaml`](../../argocd-apps/reliability-demo.yaml)
+4. [`terraform/charts/argocd-apps/templates/reliability-demo-app.yaml`](../../terraform/charts/argocd-apps/templates/reliability-demo-app.yaml)
 5. [`.github/workflows/release.yml`](../../.github/workflows/release.yml)
-6. [`.github/workflows/deploy-infrastructure.yml`](../../.github/workflows/deploy-infrastructure.yml)
+6. [`.github/workflows/build-pr.yml`](../../.github/workflows/build-pr.yml)
+7. [`.github/workflows/deploy-infrastructure.yml`](../../.github/workflows/deploy-infrastructure.yml)
 
 ## Pre-Recording Checklist
 
-- [ ] Azure credentials configured in GitHub secrets
-- [ ] Broken test image pushed to registry
+- [ ] Azure credentials configured in GitHub secrets (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_SUBSCRIPTION_ID, AZURE_TENANT_ID)
+- [ ] ACR will be created during infrastructure deployment
 - [ ] Terminal and VS Code arranged side by side
 - [ ] GitHub Actions tab open in browser
-- [ ] Test all PowerShell commands
+- [ ] Test all PowerShell commands with correct resource group names (reliability-demo-demo)
 - [ ] Clear terminal history
+- [ ] Ensure git is configured for commits
+- [ ] Verify kubectl is installed and working

@@ -6,9 +6,11 @@ on:
       - 'v*.*.*'  # Triggers on version tags like v1.2.3
 
 env:
-  REGISTRY: ghcr.io
-  WEB_IMAGE_NAME: ${{ github.repository }}/reliability-demo
-  WORKER_IMAGE_NAME: ${{ github.repository }}/reliability-demo-worker
+  ACR_REGISTRY: reliabilitydemoacrdemo.azurecr.io
+  STAGING_WEB_IMAGE_NAME: sixeyed-staging/reliability-demo
+  STAGING_WORKER_IMAGE_NAME: sixeyed-staging/reliability-demo-worker
+  PRODUCTION_WEB_IMAGE_NAME: sixeyed/reliability-demo
+  PRODUCTION_WORKER_IMAGE_NAME: sixeyed/reliability-demo-worker
 
 jobs:
   build-and-deploy:
@@ -32,65 +34,75 @@ jobs:
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "Building version: $VERSION"
 
+    - name: Get commit SHA from merge commit
+      id: commit
+      run: |
+        # For release tags, we want to promote images from the most recent merge commit
+        # This should be the staging images that were built when the PR was merged
+        COMMIT_SHA=$(git log --format="%H" -n 1 --merges)
+        if [ -z "$COMMIT_SHA" ]; then
+          # If no merge commit found, use the current commit
+          COMMIT_SHA=${{ github.sha }}
+        fi
+        echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_OUTPUT
+        echo "Using commit: $COMMIT_SHA"
+
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: |
+          {
+            "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+          }
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Log in to Azure Container Registry
+      run: |
+        az acr login --name reliabilitydemoacrdemo
 
-    - name: Extract metadata for web image
-      id: meta-web
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}
-        tags: |
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}
-          type=ref,event=tag
-
-    - name: Extract metadata for worker image
-      id: meta-worker
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.WORKER_IMAGE_NAME }}
-        tags: |
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}
-          type=ref,event=tag
-
-    - name: Build and push web image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./src
-        file: ./src/ReliabilityDemo/Dockerfile
-        push: true
-        tags: ${{ steps.meta-web.outputs.tags }}
-        labels: ${{ steps.meta-web.outputs.labels }}
-        platforms: linux/amd64,linux/arm64
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: Build and push worker image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./src
-        file: ./src/ReliabilityDemo.Worker/Dockerfile
-        push: true
-        tags: ${{ steps.meta-worker.outputs.tags }}
-        labels: ${{ steps.meta-worker.outputs.labels }}
-        platforms: linux/amd64,linux/arm64
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+    - name: Pull staging images and push to production
+      run: |
+        VERSION=${{ steps.version.outputs.VERSION }}
+        COMMIT_SHA=${{ steps.commit.outputs.COMMIT_SHA }}
+        SHORT_SHA=${COMMIT_SHA:0:7}
+        
+        # Pull staging images built from this commit
+        echo "Pulling staging web image..."
+        docker pull ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}:$SHORT_SHA
+        
+        echo "Pulling staging worker image..."
+        docker pull ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}:$SHORT_SHA
+        
+        # Tag for production
+        echo "Tagging images for production..."
+        docker tag ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}:$SHORT_SHA ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WEB_IMAGE_NAME }}:v$VERSION
+        docker tag ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}:$SHORT_SHA ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WEB_IMAGE_NAME }}:latest
+        
+        docker tag ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}:$SHORT_SHA ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WORKER_IMAGE_NAME }}:v$VERSION
+        docker tag ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}:$SHORT_SHA ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WORKER_IMAGE_NAME }}:latest
+        
+        # Push production images
+        echo "Pushing production web images..."
+        docker push ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WEB_IMAGE_NAME }}:v$VERSION
+        docker push ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WEB_IMAGE_NAME }}:latest
+        
+        echo "Pushing production worker images..."
+        docker push ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WORKER_IMAGE_NAME }}:v$VERSION
+        docker push ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WORKER_IMAGE_NAME }}:latest
+        
+        echo "✅ Successfully promoted staging images to production"
 
     - name: Update Helm chart versions
       run: |
         VERSION=${{ steps.version.outputs.VERSION }}
+        
+        # Update image registry domain in values.yaml
+        sed -i "s|domain: \".*\"|domain: \"${{ env.ACR_REGISTRY }}\"|g" helm/app/values.yaml
         
         # Update image tags in values.yaml
         sed -i "s|tag: \".*\"|tag: \"v$VERSION\"|g" helm/app/values.yaml
@@ -120,14 +132,15 @@ jobs:
         git add helm/app/values.yaml helm/app/Chart.yaml
         git commit -m "🚀 Release v$VERSION - Update Helm chart versions
 
+        - Updated image registry to ${{ env.ACR_REGISTRY }}
         - Updated web image tag to v$VERSION
         - Updated worker image tag to v$VERSION  
         - Updated chart version to $VERSION
         - Updated appVersion to v$VERSION
         
         Images:
-        - ${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}:v$VERSION
-        - ${{ env.REGISTRY }}/${{ env.WORKER_IMAGE_NAME }}:v$VERSION"
+        - ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WEB_IMAGE_NAME }}:v$VERSION
+        - ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WORKER_IMAGE_NAME }}:v$VERSION"
         
         # Push changes
         git push origin main
@@ -146,12 +159,12 @@ jobs:
           ## 🚀 Release ${{ github.ref_name }}
           
           ### Container Images
-          - **Web API**: `${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}:v${{ steps.version.outputs.VERSION }}`
-          - **Worker**: `${{ env.REGISTRY }}/${{ env.WORKER_IMAGE_NAME }}:v${{ steps.version.outputs.VERSION }}`
+          - **Web API**: `${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WEB_IMAGE_NAME }}:v${{ steps.version.outputs.VERSION }}`
+          - **Worker**: `${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WORKER_IMAGE_NAME }}:v${{ steps.version.outputs.VERSION }}`
           
           ### Deployment
           This release has been automatically deployed via GitOps:
-          1. ✅ Docker images built and pushed to GHCR
+          1. ✅ Staging images promoted to production in ACR
           2. ✅ Helm chart updated with new version
           3. ✅ Changes committed to main branch
           4. 🔄 ArgoCD will detect changes and deploy automatically
@@ -176,9 +189,9 @@ jobs:
         echo "## 🎉 Release v$VERSION Completed!"
         echo ""
         echo "### What happened:"
-        echo "1. ✅ Built and pushed container images to GHCR"
-        echo "   - ${{ env.REGISTRY }}/${{ env.WEB_IMAGE_NAME }}:v$VERSION"
-        echo "   - ${{ env.REGISTRY }}/${{ env.WORKER_IMAGE_NAME }}:v$VERSION"
+        echo "1. ✅ Promoted staging images to production in ACR"
+        echo "   - ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WEB_IMAGE_NAME }}:v$VERSION"
+        echo "   - ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WORKER_IMAGE_NAME }}:v$VERSION"
         echo ""
         echo "2. ✅ Updated Helm chart with new version"
         echo "3. ✅ Committed changes to main branch"

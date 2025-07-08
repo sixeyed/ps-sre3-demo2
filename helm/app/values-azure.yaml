@@ -1,5 +1,10 @@
 # Azure-specific overrides for Reliability Demo application
 
+# Image registry configuration for Azure (ACR)
+imageRegistry:
+  domain: "reliabilitydemoacrdemo.azurecr.io"
+  repository: "sixeyed"  # Production repository
+
 # Web API configuration  
 web:
   service:

@@ -69,6 +69,32 @@ resource "azurerm_log_analytics_workspace" "main" {
   tags = var.tags
 }
 
+# Azure Container Registry
+resource "azurerm_container_registry" "main" {
+  name                = var.acr_name
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  sku                 = var.acr_sku
+  admin_enabled       = var.acr_admin_enabled
+
+  # Enable public network access
+  public_network_access_enabled = true
+  
+  # Configure network rules if needed
+  network_rule_set {
+    default_action = "Allow"
+  }
+
+  tags = var.tags
+}
+
+# Grant AKS access to ACR
+resource "azurerm_role_assignment" "aks_acr_pull" {
+  scope                = azurerm_container_registry.main.id
+  role_definition_name = "AcrPull"
+  principal_id         = module.aks.kubelet_identity_object_id
+}
+
 # AKS Cluster
 module "aks" {
   source = "./modules/aks"
@@ -181,4 +207,21 @@ output "log_analytics_workspace_name" {
 
 output "log_analytics_workspace_id" {
   value = azurerm_log_analytics_workspace.main.id
+}
+
+output "acr_name" {
+  value = azurerm_container_registry.main.name
+}
+
+output "acr_login_server" {
+  value = azurerm_container_registry.main.login_server
+}
+
+output "acr_admin_username" {
+  value = azurerm_container_registry.main.admin_username
+}
+
+output "acr_admin_password" {
+  value     = azurerm_container_registry.main.admin_password
+  sensitive = true
 }

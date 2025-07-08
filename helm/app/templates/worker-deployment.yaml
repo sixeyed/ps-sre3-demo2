@@ -45,7 +45,7 @@ spec:
       {{- end }}
       containers:
       - name: worker
-        image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag | default .Chart.AppVersion }}"
+        image: "{{ .Values.imageRegistry.domain }}/{{ .Values.imageRegistry.repository }}/{{ .Values.worker.image.imageName }}:{{ .Values.worker.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
         env:
         - name: ASPNETCORE_ENVIRONMENT
