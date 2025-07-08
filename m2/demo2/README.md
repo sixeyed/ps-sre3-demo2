@@ -45,8 +45,8 @@ Get-ChildItem -Directory | Select-Object Name
 3. Select "Deploy Infrastructure" workflow
 4. Click "Run workflow"
 5. Select:
-   - Environment: `demo`
-   - Action: `apply`
+   - Environment: `staging` (default)
+   - Action: `apply` (default - will run plan first)
 6. Click "Run workflow"
 
 **Monitor deployment progress in GitHub Actions UI**
@@ -59,7 +59,7 @@ Get-ChildItem -Directory | Select-Object Name
 
 ```powershell
 # Once deployment completes, get AKS credentials
-az aks get-credentials --resource-group reliability-demo-demo --name aks-reliability-demo-demo
+az aks get-credentials --resource-group reliability-demo-staging --name aks-reliability-demo-staging
 
 # Verify cluster
 kubectl get nodes
@@ -227,7 +227,7 @@ Automated GitOps (Demo 2):
 1. Go to Actions tab
 2. Run "Deploy Infrastructure" workflow
 3. Select:
-   - Environment: `demo`
+   - Environment: `staging`
    - Action: `destroy`
 4. Confirm destruction
 
@@ -249,7 +249,7 @@ Automated GitOps (Demo 2):
 - [ ] ACR will be created during infrastructure deployment
 - [ ] Terminal and VS Code arranged side by side
 - [ ] GitHub Actions tab open in browser
-- [ ] Test all PowerShell commands with correct resource group names (reliability-demo-demo)
+- [ ] Test all PowerShell commands with correct resource group names (reliability-demo-staging)
 - [ ] Clear terminal history
 - [ ] Ensure git is configured for commits
 - [ ] Verify kubectl is installed and working

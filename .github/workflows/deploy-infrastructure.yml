@@ -6,16 +6,15 @@ on:
       action:
         description: 'Terraform action to perform'
         required: true
-        default: 'plan'
+        default: 'apply'
         type: choice
         options:
-          - plan
           - apply
           - destroy
       environment:
         description: 'Environment to deploy'
         required: true
-        default: 'demo'
+        default: 'staging'
         type: choice
         options:
           - demo
@@ -62,15 +61,42 @@ jobs:
     - name: Execute Terraform Action
       shell: pwsh
       run: |
-        # Run the deploy script
-        ./deploy.ps1 `
-          -Action ${{ inputs.action }} `
-          -Environment ${{ inputs.environment }} `
-          -Location "${{ vars.AZURE_LOCATION || 'westeurope' }}" `
-          -AutoApprove `
-          -TerraformStateRG "${{ secrets.TERRAFORM_STATE_RG }}" `
-          -TerraformStateSA "${{ secrets.TERRAFORM_STATE_SA }}" `
-          -TerraformStateContainer "${{ secrets.TERRAFORM_STATE_CONTAINER }}"
+        # For apply, run plan first then apply
+        if ("${{ inputs.action }}" -eq "apply") {
+          Write-Host "Running plan first..."
+          ./deploy.ps1 `
+            -Action plan `
+            -Environment ${{ inputs.environment }} `
+            -Location "${{ vars.AZURE_LOCATION || 'westeurope' }}" `
+            -TerraformStateRG "${{ secrets.TERRAFORM_STATE_RG }}" `
+            -TerraformStateSA "${{ secrets.TERRAFORM_STATE_SA }}" `
+            -TerraformStateContainer "${{ secrets.TERRAFORM_STATE_CONTAINER }}"
+          
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Plan successful, proceeding with apply..."
+            ./deploy.ps1 `
+              -Action apply `
+              -Environment ${{ inputs.environment }} `
+              -Location "${{ vars.AZURE_LOCATION || 'westeurope' }}" `
+              -AutoApprove `
+              -TerraformStateRG "${{ secrets.TERRAFORM_STATE_RG }}" `
+              -TerraformStateSA "${{ secrets.TERRAFORM_STATE_SA }}" `
+              -TerraformStateContainer "${{ secrets.TERRAFORM_STATE_CONTAINER }}"
+          } else {
+            Write-Error "Plan failed, aborting apply"
+            exit 1
+          }
+        } else {
+          # For destroy, run directly
+          ./deploy.ps1 `
+            -Action ${{ inputs.action }} `
+            -Environment ${{ inputs.environment }} `
+            -Location "${{ vars.AZURE_LOCATION || 'westeurope' }}" `
+            -AutoApprove `
+            -TerraformStateRG "${{ secrets.TERRAFORM_STATE_RG }}" `
+            -TerraformStateSA "${{ secrets.TERRAFORM_STATE_SA }}" `
+            -TerraformStateContainer "${{ secrets.TERRAFORM_STATE_CONTAINER }}"
+        }
 
     - name: Save Terraform Outputs
       if: inputs.action == 'apply'

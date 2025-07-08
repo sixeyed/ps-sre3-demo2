@@ -77,13 +77,8 @@ resource "azurerm_container_registry" "main" {
   sku                 = var.acr_sku
   admin_enabled       = var.acr_admin_enabled
 
-  # Enable public network access
+  # Enable public network access (Standard SKU doesn't support network rules)
   public_network_access_enabled = true
-
-  # Configure network rules if needed
-  network_rule_set {
-    default_action = "Allow"
-  }
 
   tags = var.tags
 }
