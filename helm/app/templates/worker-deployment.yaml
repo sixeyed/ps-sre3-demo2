@@ -20,6 +20,34 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/worker-configmap.yaml") . | sha256sum }}
     spec:
+      nodeSelector:
+        {{- if eq .Values.architecture.nodeArch "arm64" }}
+        nodepool: arm64
+        {{- else }}
+        nodepool: default
+        {{- end }}
+        {{- with .Values.nodeSelector }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if eq .Values.architecture.nodeArch "arm64" }}
+      tolerations:
+        - key: "nodepool"
+          operator: "Equal"
+          value: "arm64"
+          effect: "NoSchedule"
+        {{- with .Values.tolerations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- else }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
       - name: worker
         image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag | default .Chart.AppVersion }}"

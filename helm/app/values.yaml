@@ -1,5 +1,16 @@
 # Reliability Demo application configuration
 
+# Architecture configuration
+architecture:
+  # Target CPU architecture: amd64 or arm64
+  # Auto-detected by deployment scripts based on local Docker platform
+  nodeArch: "arm64"
+
+# Global node selector and scheduling configuration
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
 # Web API configuration
 web:
   replicaCount: 6

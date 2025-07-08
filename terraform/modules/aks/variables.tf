@@ -65,3 +65,34 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# ARM64 node pool variables
+variable "enable_arm64_nodes" {
+  description = "Enable ARM64 node pool for Apple Silicon builds"
+  type        = bool
+  default     = true
+}
+
+variable "arm64_node_vm_size" {
+  description = "VM size for ARM64 node pool"
+  type        = string
+  default     = "Standard_D2ps_v5"  # ARM64-based VM
+}
+
+variable "arm64_node_count" {
+  description = "Initial number of ARM64 nodes"
+  type        = number
+  default     = 1
+}
+
+variable "arm64_min_node_count" {
+  description = "Minimum number of ARM64 nodes for autoscaling"
+  type        = number
+  default     = 0
+}
+
+variable "arm64_max_node_count" {
+  description = "Maximum number of ARM64 nodes for autoscaling"
+  type        = number
+  default     = 3
+}

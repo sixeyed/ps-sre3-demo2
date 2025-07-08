@@ -75,6 +75,13 @@ module "aks" {
   min_node_count      = var.min_node_count
   max_node_count      = var.max_node_count
   
+  # ARM64 node pool configuration
+  enable_arm64_nodes    = var.enable_arm64_nodes
+  arm64_node_vm_size    = var.arm64_node_vm_size
+  arm64_node_count      = var.arm64_node_count
+  arm64_min_node_count  = var.arm64_min_node_count
+  arm64_max_node_count  = var.arm64_max_node_count
+  
   tags = var.tags
 }
 
