@@ -16,6 +16,8 @@ web:
     type: NodePort
     port: 8080  # Local uses port 8080
     targetPort: 8080
+  ingress:
+    enabled: false  # No ingress needed for local development
   resources:
     requests:
       memory: "128Mi"
