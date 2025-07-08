@@ -13,7 +13,8 @@ spec:
     path: helm/app
     helm:
       valueFiles:
-        - values-azure.yaml  # Use Azure-specific values
+        - values.yaml        # Base configuration
+        - values-azure.yaml  # Azure-specific overrides
   
   destination:
     server: https://kubernetes.default.svc
