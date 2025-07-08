@@ -1,6 +1,6 @@
 name: Deploy Infrastructure
 
-run-name: Deploy Infrastructure ${{ inputs.action }} ${{ inputs.environment }}
+run-name: Deploy Infrastructure | ${{ inputs.action }} | ${{ inputs.environment }}
 
 on:
   workflow_dispatch:

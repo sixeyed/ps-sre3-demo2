@@ -44,8 +44,21 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # Auto-upgrade for patch versions
   automatic_channel_upgrade = "patch"
+  
+  # Note: ACR attachment is handled via null_resource below
 
   tags = var.tags
+}
+
+# Attach ACR to AKS cluster (if ACR ID is provided)
+resource "null_resource" "attach_acr" {
+  count = var.acr_id != "" ? 1 : 0
+  
+  provisioner "local-exec" {
+    command = "az aks update --name ${azurerm_kubernetes_cluster.main.name} --resource-group ${var.resource_group_name} --attach-acr ${var.acr_id}"
+  }
+  
+  depends_on = [azurerm_kubernetes_cluster.main]
 }
 
 # Additional node pool for workloads

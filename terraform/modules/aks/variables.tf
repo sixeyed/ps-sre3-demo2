@@ -96,3 +96,9 @@ variable "arm64_max_node_count" {
   type        = number
   default     = 3
 }
+
+variable "acr_id" {
+  description = "Azure Container Registry ID to attach to AKS"
+  type        = string
+  default     = ""
+}

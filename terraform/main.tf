@@ -83,12 +83,8 @@ resource "azurerm_container_registry" "main" {
   tags = var.tags
 }
 
-# Grant AKS access to ACR
-resource "azurerm_role_assignment" "aks_acr_pull" {
-  scope                = azurerm_container_registry.main.id
-  role_definition_name = "AcrPull"
-  principal_id         = module.aks.kubelet_identity_object_id
-}
+# Note: AKS-to-ACR integration is handled via attach_acr parameter in AKS module
+# This avoids needing role assignment permissions for the service principal
 
 # AKS Cluster
 module "aks" {
@@ -116,6 +112,9 @@ module "aks" {
 
   # Enable monitoring with Log Analytics
   log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
+  
+  # Attach ACR to AKS (handles role assignment automatically)
+  acr_id = azurerm_container_registry.main.id
 
   tags = var.tags
 }
