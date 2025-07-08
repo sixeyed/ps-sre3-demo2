@@ -458,14 +458,34 @@
     <script>
         let demoControlsVisible = false;
 
-        // Fallback UUID generation for non-secure contexts
+        // Robust UUID generation for all contexts
         function generateUUID() {
-            // Try crypto.randomUUID first (secure contexts only)
+            // Try crypto.randomUUID first (works in secure contexts)
             if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-                return crypto.randomUUID();
+                try {
+                    return crypto.randomUUID();
+                } catch (e) {
+                    // Fall through to backup method
+                }
             }
             
-            // Fallback implementation for non-secure contexts
+            // Try crypto.getRandomValues if available (works in more contexts)
+            if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+                try {
+                    const arr = new Uint8Array(16);
+                    crypto.getRandomValues(arr);
+                    // Format as UUID v4
+                    arr[6] = (arr[6] & 0x0f) | 0x40; // version 4
+                    arr[8] = (arr[8] & 0x3f) | 0x80; // variant bits
+                    
+                    const hex = Array.from(arr, byte => byte.toString(16).padStart(2, '0')).join('');
+                    return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20,32)}`;
+                } catch (e) {
+                    // Fall through to Math.random method
+                }
+            }
+            
+            // Fallback using Math.random (works everywhere but less secure)
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 const r = Math.random() * 16 | 0;
                 const v = c === 'x' ? r : (r & 0x3 | 0x8);
