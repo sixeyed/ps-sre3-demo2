@@ -16,11 +16,12 @@ web:
   replicaCount: 6
   image:
     repository: sixeyed/reliability-demo
-    tag: "m1-01"
+    tag: "m2"
     pullPolicy: Always
   service:
     type: LoadBalancer
-    port: 8080
+    port: 80  # Default port (can be overridden)
+    targetPort: 8080
   resources:
     requests:
       memory: "256Mi"
@@ -59,7 +60,7 @@ worker:
   replicaCount: 2
   image:
     repository: sixeyed/reliability-demo-worker
-    tag: "m1-01"
+    tag: "m2"
     pullPolicy: Always
   resources:
     requests:

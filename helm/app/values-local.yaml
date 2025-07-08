@@ -1,0 +1,126 @@
+# Local development values for Reliability Demo application
+
+# Architecture configuration
+architecture:
+  # Target CPU architecture: amd64 or arm64
+  nodeArch: "arm64"  # Adjust based on your local Docker platform
+
+# Web API configuration  
+web:
+  replicaCount: 1
+  image:
+    repository: sixeyed/reliability-demo
+    tag: "m2"
+    pullPolicy: IfNotPresent
+  service:
+    type: NodePort
+    port: 8080  # Local uses port 8080
+    targetPort: 8080
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 8080
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  podDisruptionBudget:
+    enabled: false  # Not needed for local development
+  autoscaling:
+    enabled: false  # Use fixed replicas locally
+
+# Worker configuration
+worker:
+  replicaCount: 1
+  image:
+    repository: sixeyed/reliability-demo-worker
+    tag: "m2"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+  livenessProbe:
+    exec:
+      command:
+      - /bin/sh
+      - -c
+      - "ps aux | grep -v grep | grep -q dotnet"
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  podDisruptionBudget:
+    enabled: false
+  autoscaling:
+    enabled: false
+
+# Application configuration
+config:
+  failureConfig:
+    enabled: true
+    connectionFailureRate: 0.1
+    readTimeoutRate: 0.5
+    writeTimeoutRate: 0.3
+    slowResponseRate: 0.1
+    readTimeoutMs: 1000
+    writeTimeoutMs: 1000
+    slowResponseDelayMs: 3000
+  sqlServerDataStore:
+    maxConcurrentClients: 2
+    autoMigrate: true
+  distributedCache:
+    enabled: true
+    expirationSeconds: 60  # Shorter cache for development
+  customerOperation:
+    pattern: "Async"  # Enable async pattern for worker
+  messaging:
+    createCustomerQueueName: "customer_create_queue"
+    updateCustomerQueueName: "customer_update_queue"
+    deleteCustomerQueueName: "customer_delete_queue"
+    retryAttempts: 3
+    retryDelayMs: 500  # Faster retries for development
+
+# Redis dependency configuration
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: false  # No persistence needed locally
+      size: 1Gi
+  replica:
+    replicaCount: 0  # No replicas needed locally
+    persistence:
+      enabled: false
+
+# SQL Server configuration
+sqlserver:
+  enabled: true
+  image:
+    repository: mcr.microsoft.com/mssql/server
+    tag: 2022-latest
+  auth:
+    saPassword: "YourStrong@Passw0rd"
+  persistence:
+    enabled: true
+    size: 1Gi  # Smaller volume for local

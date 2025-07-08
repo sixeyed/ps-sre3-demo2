@@ -9,6 +9,9 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+  {{- if .Values.sqlserver.persistence.storageClass }}
+  storageClassName: {{ .Values.sqlserver.persistence.storageClass }}
+  {{- end }}
   resources:
     requests:
       storage: {{ .Values.sqlserver.persistence.size }}

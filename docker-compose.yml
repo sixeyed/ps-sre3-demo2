@@ -8,7 +8,7 @@ services:
     command: redis-server --appendonly yes
 
   reliability-demo:
-    image: sixeyed/reliability-demo:m1-01
+    image: sixeyed/reliability-demo:m2
     build:
       context: ./src
       dockerfile: ReliabilityDemo/Dockerfile
@@ -21,7 +21,7 @@ services:
       - redis
 
   customer-worker:
-    image: sixeyed/reliability-demo-worker:m1-01
+    image: sixeyed/reliability-demo-worker:m2
     build:
       context: ./src
       dockerfile: ReliabilityDemo.Worker/Dockerfile
