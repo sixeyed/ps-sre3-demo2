@@ -25,20 +25,15 @@ spec:
         {{- with .Values.nodeSelector }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-      {{- if eq .Values.architecture.nodeArch "arm64" }}
       tolerations:
+      {{- if eq .Values.architecture.nodeArch "arm64" }}
         - key: "nodepool"
           operator: "Equal"
           value: "arm64"
           effect: "NoSchedule"
-        {{- with .Values.tolerations }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
-      {{- else }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.tolerations }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.affinity }}
       affinity:
@@ -46,7 +41,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag }}"
+          image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.web.image.pullPolicy }}
           ports:
             - name: http

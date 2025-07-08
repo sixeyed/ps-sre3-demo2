@@ -460,11 +460,17 @@
 
         // Robust UUID generation for all contexts
         function generateUUID() {
+            console.log('generateUUID called, crypto available:', typeof crypto !== 'undefined');
+            
             // Try crypto.randomUUID first (works in secure contexts)
             if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                 try {
-                    return crypto.randomUUID();
+                    console.log('Attempting crypto.randomUUID()');
+                    const result = crypto.randomUUID();
+                    console.log('crypto.randomUUID() success:', result);
+                    return result;
                 } catch (e) {
+                    console.log('crypto.randomUUID() failed:', e.message);
                     // Fall through to backup method
                 }
             }
@@ -472,6 +478,7 @@
             // Try crypto.getRandomValues if available (works in more contexts)
             if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
                 try {
+                    console.log('Attempting crypto.getRandomValues()');
                     const arr = new Uint8Array(16);
                     crypto.getRandomValues(arr);
                     // Format as UUID v4
@@ -479,18 +486,24 @@
                     arr[8] = (arr[8] & 0x3f) | 0x80; // variant bits
                     
                     const hex = Array.from(arr, byte => byte.toString(16).padStart(2, '0')).join('');
-                    return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20,32)}`;
+                    const result = `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20,32)}`;
+                    console.log('crypto.getRandomValues() success:', result);
+                    return result;
                 } catch (e) {
+                    console.log('crypto.getRandomValues() failed:', e.message);
                     // Fall through to Math.random method
                 }
             }
             
             // Fallback using Math.random (works everywhere but less secure)
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            console.log('Using Math.random() fallback');
+            const result = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 const r = Math.random() * 16 | 0;
                 const v = c === 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
+            console.log('Math.random() fallback result:', result);
+            return result;
         }
 
         // Initialize the application
@@ -502,33 +515,49 @@
         });
 
         function generateRandomCustomerData() {
-            const firstNames = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Lisa', 'Chris', 'Emma', 'Alex', 'Maria'];
-            const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
-            const domains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'company.com'];
-            const streets = ['Main St', 'Oak Ave', 'Park Blvd', 'First St', 'Second Ave', 'Elm St', 'Maple Dr', 'Cedar Ln'];
-            const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego'];
-            const states = ['NY', 'CA', 'IL', 'TX', 'AZ', 'PA', 'FL', 'WA'];
-            
-            const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-            const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-            const domain = domains[Math.floor(Math.random() * domains.length)];
-            const street = streets[Math.floor(Math.random() * streets.length)];
-            const city = cities[Math.floor(Math.random() * cities.length)];
-            const state = states[Math.floor(Math.random() * states.length)];
-            
-            // Generate a short UUID fragment to ensure email uniqueness
-            const uuid = generateUUID();
-            const uuidFragment = uuid.substring(0, 8); // Use first 8 characters
-            
-            const name = `${firstName} ${lastName}`;
-            const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${uuidFragment}@${domain}`;
-            const phone = `+1-${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 900 + 100)}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
-            const address = `${Math.floor(Math.random() * 9999 + 1)} ${street}, ${city}, ${state} ${String(Math.floor(Math.random() * 90000 + 10000))}`;
-            
-            document.getElementById('customerName').value = name;
-            document.getElementById('customerEmail').value = email;
-            document.getElementById('customerPhone').value = phone;
-            document.getElementById('customerAddress').value = address;
+            try {
+                console.log('generateRandomCustomerData called');
+                const firstNames = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Lisa', 'Chris', 'Emma', 'Alex', 'Maria'];
+                const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez'];
+                const domains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'company.com'];
+                const streets = ['Main St', 'Oak Ave', 'Park Blvd', 'First St', 'Second Ave', 'Elm St', 'Maple Dr', 'Cedar Ln'];
+                const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego'];
+                const states = ['NY', 'CA', 'IL', 'TX', 'AZ', 'PA', 'FL', 'WA'];
+                
+                const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+                const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+                const domain = domains[Math.floor(Math.random() * domains.length)];
+                const street = streets[Math.floor(Math.random() * streets.length)];
+                const city = cities[Math.floor(Math.random() * cities.length)];
+                const state = states[Math.floor(Math.random() * states.length)];
+                
+                // Generate a short UUID fragment to ensure email uniqueness
+                console.log('About to call generateUUID()');
+                const uuid = generateUUID();
+                console.log('generateUUID() returned:', uuid);
+                const uuidFragment = uuid.substring(0, 8); // Use first 8 characters
+                
+                const name = `${firstName} ${lastName}`;
+                const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${uuidFragment}@${domain}`;
+                const phone = `+1-${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 900 + 100)}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+                const address = `${Math.floor(Math.random() * 9999 + 1)} ${street}, ${city}, ${state} ${String(Math.floor(Math.random() * 90000 + 10000))}`;
+                
+                console.log('Generated customer data:', { name, email, phone, address });
+                
+                document.getElementById('customerName').value = name;
+                document.getElementById('customerEmail').value = email;
+                document.getElementById('customerPhone').value = phone;
+                document.getElementById('customerAddress').value = address;
+                
+                console.log('Customer data populated in form');
+            } catch (error) {
+                console.error('Error in generateRandomCustomerData:', error);
+                // Provide fallback data if UUID generation fails
+                document.getElementById('customerName').value = 'John Doe';
+                document.getElementById('customerEmail').value = 'john.doe.fallback@example.com';
+                document.getElementById('customerPhone').value = '+1-555-123-4567';
+                document.getElementById('customerAddress').value = '123 Main St, Anytown, NY 12345';
+            }
         }
 
         function toggleDemoPanel() {
