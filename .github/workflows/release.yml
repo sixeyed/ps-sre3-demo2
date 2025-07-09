@@ -54,6 +54,12 @@ jobs:
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "Building version: $VERSION"
 
+    - name: Switch to main branch
+      run: |
+        # Switch to main branch to enable pushing changes
+        git checkout main
+        git pull origin main
+
     - name: Azure Login
       uses: azure/login@v1
       with:
