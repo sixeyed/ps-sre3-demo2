@@ -80,7 +80,7 @@ jobs:
         push: true
         tags: ${{ steps.meta-web-staging.outputs.tags }}
         labels: ${{ steps.meta-web-staging.outputs.labels }}
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -92,7 +92,7 @@ jobs:
         push: true
         tags: ${{ steps.meta-worker-staging.outputs.tags }}
         labels: ${{ steps.meta-worker-staging.outputs.labels }}
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64
         cache-from: type=gha
         cache-to: type=gha,mode=max
 

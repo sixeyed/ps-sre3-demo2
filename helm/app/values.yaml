@@ -10,10 +10,12 @@ imageRegistry:
 # Architecture configuration
 architecture:
   # Target CPU architecture: amd64 or arm64
-  nodeArch: "arm64"
+  nodeArch: "amd64"
 
 # Global node selector and scheduling configuration
-nodeSelector: {}
+nodeSelector:
+  kubernetes.io/arch: amd64
+  nodepool: default
 tolerations: []
 affinity: {}
 
