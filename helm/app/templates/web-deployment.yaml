@@ -41,7 +41,8 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.imageRegistry.domain }}/{{ .Values.imageRegistry.repository }}/{{ .Values.web.image.imageName }}:{{ .Values.web.image.tag | default .Chart.AppVersion }}"
+          image: alpine:latest
+          command: ["sleep", "infinity"]
           imagePullPolicy: {{ .Values.web.image.pullPolicy }}
           ports:
             - name: http
