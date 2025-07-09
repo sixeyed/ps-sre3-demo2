@@ -24,7 +24,7 @@ web:
   replicaCount: 6
   image:
     imageName: reliability-demo
-    tag: "v0.9.7"
+    tag: "v0.9.8"
     pullPolicy: Always
   service:
     type: LoadBalancer
@@ -68,7 +68,7 @@ worker:
   replicaCount: 2
   image:
     imageName: reliability-demo-worker
-    tag: "v0.9.7"
+    tag: "v0.9.8"
     pullPolicy: Always
   resources:
     requests:
