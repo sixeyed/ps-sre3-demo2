@@ -52,6 +52,11 @@ resource "azurerm_kubernetes_cluster" "main" {
 
 # Attach ACR to AKS cluster
 resource "null_resource" "attach_acr" {
+  # Force recreation when the script changes
+  triggers = {
+    script_version = "v2.1"
+  }
+  
   provisioner "local-exec" {
     command = <<-EOT
       # Wait for all AKS operations to complete before attaching ACR
