@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: web
-        image: sixeyed/reliability-demo:m1-01
+        image: sixeyed/reliability-demo:m2
         ports:
         - containerPort: 8080
         env:

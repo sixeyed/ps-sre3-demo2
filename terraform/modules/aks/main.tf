@@ -45,8 +45,6 @@ resource "azurerm_kubernetes_cluster" "main" {
   # Auto-upgrade for patch versions
   automatic_channel_upgrade = "patch"
   
-  # Note: ACR attachment is handled via null_resource below
-
   tags = var.tags
 }
 

@@ -4,7 +4,7 @@
 # Removes the test cluster and cleans up Docker resources
 
 param(
-    [string]$ClusterName = "test-cluster"
+    [string]$ClusterName = "sre3-m2"
 )
 
 Write-Host "=== Demo 1 Cleanup ===" -ForegroundColor Red
@@ -18,23 +18,6 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "✓ Cluster deleted successfully" -ForegroundColor Green
 } else {
     Write-Warning "Failed to delete cluster or cluster didn't exist"
-}
-
-# Clean up Docker images
-Write-Host ""
-Write-Host "Cleaning up Docker images..." -ForegroundColor Yellow
-
-# Remove test registry images
-$testImages = @(
-    "test.registry:5001/reliability-demo:2024-01-14-1200",
-    "test.registry:5001/reliability-demo:2024-01-14-1630",
-    "test.registry:5001/reliability-demo:2024-01-15-0900",
-    "test.registry:5001/reliability-demo:broken-test"
-)
-
-foreach ($image in $testImages) {
-    Write-Host "Removing $image..." -ForegroundColor Gray
-    docker rmi $image 2>$null
 }
 
 # Clean up any dangling images and containers

@@ -4,10 +4,11 @@
 # Creates a 3-node k3d cluster with older Kubernetes version
 
 param(
-    [string]$ClusterName = "test-cluster",
+    [string]$ClusterName = "sre3-m2",
     [string]$KubernetesVersion = "v1.24.2-k3s1",
     [int]$ApiPort = 6551,
     [int]$HttpPort = 8080,
+    [int]$GrafanaPort = 3000,
     [int]$RegistryPort = 5001
 )
 
@@ -73,6 +74,7 @@ $clusterCommand = @(
     "--servers", "1",
     "--agents", "3",
     "--port", "$HttpPort`:$HttpPort@loadbalancer",
+    "--port", "$GrafanaPort`:$GrafanaPort@loadbalancer",
     "--registry-create", "test.registry:$RegistryPort",
     "--agents-memory", "1.5g",
     "--servers-memory", "1g",
@@ -119,57 +121,32 @@ Write-Host ""
 Write-Host "Verifying cluster version..." -ForegroundColor Yellow
 kubectl get nodes -o wide
 
-Write-Host ""
-Write-Host "Cluster node capacity:" -ForegroundColor Yellow
-kubectl describe nodes | Select-String -Pattern "Capacity:" -A 5
+Start-Sleep -Seconds 10
 
-Write-Host ""
+Write-Host "Deploying logging subsystem..." -ForegroundColor Yellow
+../../helm/lgtm/install.ps1
+
+
+Write-Host "Deploying app..." -ForegroundColor Yellow
+kubectl apply -f manifests/initial
 
 # Prepare container images
-Write-Host "Preparing container images..." -ForegroundColor Yellow
+Write-Host "Testing registry ..." -ForegroundColor Yellow
 
-$images = @(
-    @{
-        Source = "sixeyed/reliability-demo:m1-01"
-        Targets = @(
-            "test.registry:$RegistryPort/reliability-demo:2024-01-14-1200",
-            "test.registry:$RegistryPort/reliability-demo:2024-01-14-1630",
-            "test.registry:$RegistryPort/reliability-demo:2024-01-15-0900"
-        )
-    }
-)
+$imageTag = "test.registry:5001/reliability-demo:m2"
 
-foreach ($imageSet in $images) {
-    Write-Host "Pulling $($imageSet.Source)..." -ForegroundColor Cyan
-    docker pull $imageSet.Source
-    
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to pull $($imageSet.Source)"
-        exit 1
-    }
-    
-    foreach ($target in $imageSet.Targets) {
-        Write-Host "Tagging as $target..." -ForegroundColor Gray
-        docker tag $imageSet.Source $target
-        
-        Write-Host "Pushing $target..." -ForegroundColor Gray
-        docker push $target
-        
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "Failed to push $target"
-            exit 1
-        }
-    }
-}
+Write-Host "Building web image with tag: $imageTag"
+Push-Location ../../src
 
-# Create broken test image
-Write-Host "Creating broken test image..." -ForegroundColor Yellow
-$brokenImage = "test.registry:$RegistryPort/reliability-demo:broken-test"
+# Build new container image
+docker build -t $imageTag -f ReliabilityDemo/Dockerfile .
 
-docker run --name broken-container alpine:latest sh -c "exit 1" 2>$null
-docker commit broken-container $brokenImage | Out-Null
-docker push $brokenImage | Out-Null
-docker rm broken-container | Out-Null
+# Push to test registry
+docker push $imageTag
+
+Write-Host "Image pushed successfully: $imageTag"
+Pop-Location
+
 
 Write-Host "✓ Container images prepared" -ForegroundColor Green
 Write-Host ""

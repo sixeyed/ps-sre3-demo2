@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: worker
-        image: sixeyed/reliability-demo-worker:m1-01
+        image: sixeyed/reliability-demo-worker:m2
         env:
         - name: ASPNETCORE_ENVIRONMENT
           value: "Production"
