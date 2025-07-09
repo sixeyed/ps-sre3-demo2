@@ -123,42 +123,35 @@ jobs:
       with:
         sarif_file: 'trivy-results.sarif'
 
-    - name: Comment PR
-      uses: actions/github-script@v6
-      with:
-        script: |
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: `## 🔍 Build Results for PR #${{ github.event.number }}
-            
-            ✅ **Staging Images Built and Pushed**
-            - Web API: \`${{ env.ACR_REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}:pr-${{ github.event.number }}\`
-            - Worker: \`${{ env.ACR_REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}:pr-${{ github.event.number }}\`
-            
-            ✅ **Helm Chart Validation Passed**
-            - Linting: Passed
-            - Template validation: Passed
-            
-            ✅ **Security Scan Completed**
-            - Trivy vulnerability scan results uploaded
-            
-            📋 **Staging Environment**
-            These staging images can be deployed to a staging environment for testing:
-            \`\`\`bash
-            # Deploy to staging with these images
-            helm upgrade staging-demo ./helm/app \\
-              --set imageRegistry.domain=${{ env.ACR_REGISTRY }} \\
-              --set imageRegistry.repository=sixeyed-staging \\
-              --set web.image.tag=pr-${{ github.event.number }} \\
-              --set worker.image.tag=pr-${{ github.event.number }}
-            \`\`\`
-            
-            🎯 **Ready for Review**
-            When this PR is merged and tagged with a version (e.g., \`v1.2.3\`), the release workflow will:
-            1. Pull staging images from ACR
-            2. Tag and push production images to ACR production repository
-            3. Update Helm chart versions
-            4. Trigger ArgoCD deployment to production`
-          })
+    - name: Build Summary
+      run: |
+        echo "## 🔍 Build Results for PR #${{ github.event.number }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Staging Images Built and Pushed**" >> $GITHUB_STEP_SUMMARY
+        echo "- Web API: \`${{ env.ACR_REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}:pr-${{ github.event.number }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- Worker: \`${{ env.ACR_REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}:pr-${{ github.event.number }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Helm Chart Validation Passed**" >> $GITHUB_STEP_SUMMARY
+        echo "- Linting: Passed" >> $GITHUB_STEP_SUMMARY
+        echo "- Template validation: Passed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Security Scan Completed**" >> $GITHUB_STEP_SUMMARY
+        echo "- Trivy vulnerability scan results uploaded" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📋 **Staging Environment**" >> $GITHUB_STEP_SUMMARY
+        echo "These staging images can be deployed to a staging environment for testing:" >> $GITHUB_STEP_SUMMARY
+        echo '```bash' >> $GITHUB_STEP_SUMMARY
+        echo "# Deploy to staging with these images" >> $GITHUB_STEP_SUMMARY
+        echo "helm upgrade staging-demo ./helm/app \\" >> $GITHUB_STEP_SUMMARY
+        echo "  --set imageRegistry.domain=${{ env.ACR_REGISTRY }} \\" >> $GITHUB_STEP_SUMMARY
+        echo "  --set imageRegistry.repository=sixeyed-staging \\" >> $GITHUB_STEP_SUMMARY
+        echo "  --set web.image.tag=pr-${{ github.event.number }} \\" >> $GITHUB_STEP_SUMMARY
+        echo "  --set worker.image.tag=pr-${{ github.event.number }}" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🎯 **Ready for Review**" >> $GITHUB_STEP_SUMMARY
+        echo "When this PR is merged and tagged with a version (e.g., \`v1.2.3\`), the release workflow will:" >> $GITHUB_STEP_SUMMARY
+        echo "1. Pull staging images from ACR" >> $GITHUB_STEP_SUMMARY
+        echo "2. Tag and push production images to ACR production repository" >> $GITHUB_STEP_SUMMARY
+        echo "3. Update Helm chart versions" >> $GITHUB_STEP_SUMMARY
+        echo "4. Trigger ArgoCD deployment to production" >> $GITHUB_STEP_SUMMARY
