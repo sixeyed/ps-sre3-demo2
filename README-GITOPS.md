@@ -57,6 +57,15 @@ $sp = az ad sp create-for-rbac `
   --scopes "/subscriptions/$subscriptionId" `
   --json-auth
 
+    # Get the service principal ID
+  $spId = az ad sp list --display-name "github-actions-ps-sre3-demo2" --query "[0].id" -o tsv
+
+  # Grant User Access Administrator role (allows role assignments)
+  az role assignment create `
+    --assignee $spId `
+    --role "User Access Administrator" `
+    --scope "/subscriptions/$subscriptionId"
+
 # Display the credentials (save these!)
 $sp | ConvertFrom-Json | ConvertTo-Json
 ```

@@ -10,11 +10,15 @@
 
 ## Demo Recording Steps
 
-### Step 1: Show Repository Structure
+### Step 1: Deploy Infrastracture
 
 ```powershell
-# Show repository structure
-Get-ChildItem -Directory | Select-Object Name
+# deploy prod infrastructure
+gh workflow run deploy-infrastructure.yml --field action=apply --field environment=production
+
+gh run list --workflow="deploy-infrastructure.yml" -L 1
+
+gh run watch <id>
 ```
 
 **Files to show:**
@@ -97,11 +101,11 @@ git push origin feature/update-reliability
 ```powershell
 # Switch back to main and pull
 git checkout main
-git pull origin main
+git pull github main
 
 # Tag and push
-git tag v1.2.3
-git push origin v1.2.3
+git tag v0.9.3
+git push github v0.9.3
 ```
 
 **Monitor in GitHub Actions:**

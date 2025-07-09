@@ -1,0 +1,63 @@
+Session Prompts - SRE3 Demo2 Terraform/GitHub Actions Development
+
+1. "you don't need to install pwsh in the deploy workflow - it is already on the github runners;. you can pass the shell type as ap parameter too"
+
+2. "the helm templats aren't setting the image reference properly. they have a production prefix and a staging prefix. this should just be a repository name value set to either sixeyes or sixeyed-staging; the image name itself can use a variable called imageName"
+
+3. "ok, which one should be removed? in the root folder? it's still there"
+
+4. "the deploy workflow is failing on the tf plan stage: │ Error: Invalid character │ │ on <value for var.tags> line 1:"
+
+5. "also getting error in the apply: Error: `network_rule_set_set` can only be specified for a Premium Sku. If you are reverting from a Premium to Basic SKU plese set network_rule_set = []"
+
+6. "can you add a run-name to the workflow yaml with variables for the action and the environment, e.g. Deploy Infrastructure: Apply Staging (see example here https://github.com/sixeyed/ps-sre-monitoring-observability/blob/main/.github/workflows/infrastructure-major-outage-alert.yml)"
+
+7. "The workflow is not valid. .github/workflows/deploy-infrastructure.yml (Line: 3, Col: 11): Unexpected symbol: '"apply"'. Located at position 18 within expression: inputs.action == "apply" && "Apply" || "Destroy""
+
+8. "let's keep it simple and just use the input variable values"
+
+9. "deploy failed - granting acr access to aks it seems: authorization.RoleAssignmentsClient#Create: Failure responding to request: StatusCode=403"
+
+10. "same issue - origin remote is not github. we need to push to github remote then run the workflow again"
+
+11. "still an auth issue. where do i find the az ad sp create-for-rbac listed in the azure portal"
+
+12. "│ Error: Invalid count argument
+│ 
+│   on modules/aks/main.tf line 55, in resource "null_resource" "attach_acr":
+│   55:   count = var.acr_id != "" ? 1 : 0
+│ 
+│ The "count" value depends on resource attributes that cannot be determined
+│ until apply, so Terraform cannot predict how many instances will be
+│ created. To work around this, use the -target argument to first apply only
+│ the resources that the count depends on."
+
+13. "[Request interrupted by user for tool use]local-exec provisioner error
+│ 
+│   with module.aks.null_resource.attach_acr,
+│   on modules/aks/main.tf line 55, in resource "null_resource" "attach_acr":
+│   55:   provisioner "local-exec" {
+│ 
+│ Error running command 'az aks update --name aks-reliability-demo-staging
+│ --resource-group reliability-demo-staging --attach-acr
+│ /subscriptions/***/resourceGroups/reliability-demo-staging/providers/Microsoft.ContainerRegistry/registries/reliabilitydemoacrstaging':
+│ exit status 1. Output: 
+AAD role propagation
+│ done[############################################]  100.0000%ERROR:
+│ (OperationNotAllowed) Operation is not allowed because there's an in
+│ progress create node pool operation (operation ID:
+│ a5420e73-a732-4241-bf3b-f4d1f6bf942f) on the agent pool arm64pool started"
+
+14. "can you keep iterating on the terraform config, deploy script and workflow until it completes successfully? you'll need to push to remote github between changes, run the action with the gh cli, monitor with gh run watch and then fix any issues again"
+
+15. "[Request interrupted by user]dump the prompts for this session to a text file"
+
+Context: This session was a continuation from a previous conversation about updating the deploy-infrastructure GitHub action to use deploy.ps1 script, add ACR to terraform, update helm charts, and fix various deployment issues. The main challenges encountered were:
+- PowerShell already installed on GitHub runners
+- Helm image reference structure issues
+- Terraform tag parsing errors
+- ACR network rules only for Premium SKU
+- GitHub Actions run-name syntax errors
+- Service principal authorization issues for role assignments
+- Terraform count argument dependency issues
+- ACR attachment timing conflicts with node pool operations
