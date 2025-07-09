@@ -54,18 +54,24 @@ jobs:
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "Building version: $VERSION"
 
-    - name: Get commit SHA from merge commit
-      id: commit
+    - name: Find latest staging images
+      id: staging
       run: |
-        # For release tags, we want to promote images from the most recent merge commit
-        # This should be the staging images that were built when the PR was merged
-        COMMIT_SHA=$(git log --format="%H" -n 1 --merges)
-        if [ -z "$COMMIT_SHA" ]; then
-          # If no merge commit found, use the current commit
-          COMMIT_SHA=${{ github.sha }}
+        # Find the latest staging images in ACR by checking available tags
+        echo "Finding latest staging images in ACR..."
+        
+        # Get the latest non-PR tag from staging web images (should be a SHA)
+        LATEST_TAG=$(az acr repository show-tags --name reliabilitydemoacr${{ env.ACR_ENVIRONMENT }} --repository ${{ env.STAGING_WEB_IMAGE_NAME }} --orderby time_desc --output tsv | grep -v "^pr-" | head -1)
+        
+        if [ -z "$LATEST_TAG" ]; then
+          echo "❌ No staging images found in ACR"
+          echo "Available tags:"
+          az acr repository show-tags --name reliabilitydemoacr${{ env.ACR_ENVIRONMENT }} --repository ${{ env.STAGING_WEB_IMAGE_NAME }} --output table
+          exit 1
         fi
-        echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_OUTPUT
-        echo "Using commit: $COMMIT_SHA"
+        
+        echo "STAGING_TAG=$LATEST_TAG" >> $GITHUB_OUTPUT
+        echo "✅ Found latest staging images with tag: $LATEST_TAG"
 
     - name: Azure Login
       uses: azure/login@v1
@@ -88,23 +94,22 @@ jobs:
     - name: Pull staging images and push to production
       run: |
         VERSION=${{ steps.version.outputs.VERSION }}
-        COMMIT_SHA=${{ steps.commit.outputs.COMMIT_SHA }}
-        SHORT_SHA=${COMMIT_SHA:0:7}
+        STAGING_TAG=${{ steps.staging.outputs.STAGING_TAG }}
         
-        # Pull staging images built from this commit
-        echo "Pulling staging web image..."
-        docker pull ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}:$SHORT_SHA
+        # Pull staging images using the latest available tag
+        echo "Pulling staging web image with tag: $STAGING_TAG"
+        docker pull ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}:$STAGING_TAG
         
-        echo "Pulling staging worker image..."
-        docker pull ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}:$SHORT_SHA
+        echo "Pulling staging worker image with tag: $STAGING_TAG"
+        docker pull ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}:$STAGING_TAG
         
         # Tag for production
         echo "Tagging images for production..."
-        docker tag ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}:$SHORT_SHA ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WEB_IMAGE_NAME }}:v$VERSION
-        docker tag ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}:$SHORT_SHA ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WEB_IMAGE_NAME }}:latest
+        docker tag ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}:$STAGING_TAG ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WEB_IMAGE_NAME }}:v$VERSION
+        docker tag ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WEB_IMAGE_NAME }}:$STAGING_TAG ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WEB_IMAGE_NAME }}:latest
         
-        docker tag ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}:$SHORT_SHA ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WORKER_IMAGE_NAME }}:v$VERSION
-        docker tag ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}:$SHORT_SHA ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WORKER_IMAGE_NAME }}:latest
+        docker tag ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}:$STAGING_TAG ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WORKER_IMAGE_NAME }}:v$VERSION
+        docker tag ${{ env.ACR_REGISTRY }}/${{ env.STAGING_WORKER_IMAGE_NAME }}:$STAGING_TAG ${{ env.ACR_REGISTRY }}/${{ env.PRODUCTION_WORKER_IMAGE_NAME }}:latest
         
         # Push production images
         echo "Pushing production web images..."
@@ -169,12 +174,11 @@ jobs:
         echo "🎯 ArgoCD will now detect changes and deploy v$VERSION"
 
     - name: Create GitHub Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: ncipollo/release-action@v1
       with:
-        tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }}
+        tag: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        token: ${{ secrets.GITHUB_TOKEN }}
         body: |
           ## 🚀 Release ${{ github.ref_name }}
           
