@@ -5,7 +5,7 @@
 
 param(
     [Parameter(Mandatory=$false)]
-    [ValidateSet("plan", "apply", "destroy", "validate")]
+    [ValidateSet("plan", "apply", "destroy", "validate", "force-unlock")]
     [string]$Action = "plan",
     
     [Parameter(Mandatory=$false)]
@@ -311,6 +311,21 @@ switch ($Action) {
             Write-Success "✓ Infrastructure destroyed successfully"
         } else {
             Write-Error "Destruction failed"
+            exit 1
+        }
+    }
+    
+    "force-unlock" {
+        Write-Warning "Force unlocking Terraform state..."
+        Write-Info "This will forcefully unlock the Terraform state file."
+        
+        # Try to force unlock - we need to get the lock ID from the error
+        terraform force-unlock -force ff8a2955-3694-9e21-0eb7-7216f9730125
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "✓ State unlocked successfully"
+        } else {
+            Write-Error "Force unlock failed"
             exit 1
         }
     }
