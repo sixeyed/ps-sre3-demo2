@@ -2,7 +2,7 @@
 
 # Image registry configuration for Azure (ACR)
 imageRegistry:
-  domain: "reliabilitydemoacrdemo.azurecr.io"
+  domain: "reliabilitydemoacrproduction.azurecr.io"
   repository: "sixeyed"  # Production repository
 
 # Web API configuration  
