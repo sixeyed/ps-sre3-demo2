@@ -49,7 +49,9 @@ spec:
               protocol: TCP
           env:
             - name: ASPNETCORE_ENVIRONMENT
-              value: "{{ include "reliability-demo.fullname" . }}-config: config-volume
+              value: "Production"
+          volumeMounts:
+            - name: config-volume
               mountPath: /app/config
               readOnly: true
           {{- if .Values.web.livenessProbe }}
