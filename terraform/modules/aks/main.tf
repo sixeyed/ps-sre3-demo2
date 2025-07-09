@@ -54,7 +54,7 @@ resource "azurerm_kubernetes_cluster" "main" {
 resource "null_resource" "attach_acr" {
   # Force recreation when the script changes
   triggers = {
-    script_version = "v2.1"
+    script_version = "v2.3"
   }
   
   provisioner "local-exec" {
@@ -86,13 +86,13 @@ resource "null_resource" "attach_acr" {
         
         # Check for timeout
         if [ $i -eq $MAX_ATTEMPTS ]; then
-          echo "TIMEOUT: Waiting for AKS operations to complete after $((MAX_ATTEMPTS * WAIT_TIME / 60)) minutes"
+          echo "TIMEOUT: Waiting for AKS operations to complete after $$((MAX_ATTEMPTS * WAIT_TIME / 60)) minutes"
           echo "Final cluster status: $CLUSTER_STATUS"
           echo "Remaining node pool operations: $NODEPOOL_OPERATIONS"
           exit 1
         fi
         
-        echo "Waiting... (attempt $i/$MAX_ATTEMPTS, next check in ${WAIT_TIME}s)"
+        echo "Waiting... (attempt $i/$MAX_ATTEMPTS, next check in $${WAIT_TIME}s)"
         sleep $WAIT_TIME
       done
       
