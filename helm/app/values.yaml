@@ -3,7 +3,7 @@
 # Image registry configuration
 imageRegistry:
   # Container registry domain (e.g., docker.io, ghcr.io, myregistry.azurecr.io)
-  domain: "sixeyed"
+  domain: "reliabilitydemoacrproduction.azurecr.io"
   # Repository name (e.g., sixeyed, sixeyed-staging)
   repository: "sixeyed"
 
@@ -24,7 +24,7 @@ web:
   replicaCount: 6
   image:
     imageName: reliability-demo
-    tag: "m2"
+    tag: "v0.9.6"
     pullPolicy: Always
   service:
     type: LoadBalancer
@@ -68,7 +68,7 @@ worker:
   replicaCount: 2
   image:
     imageName: reliability-demo-worker
-    tag: "m2"
+    tag: "v0.9.6"
     pullPolicy: Always
   resources:
     requests:

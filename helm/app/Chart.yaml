@@ -2,11 +2,11 @@ apiVersion: v2
 name: reliability-demo
 description: A Helm chart for the Reliability Demo application with Redis
 type: application
-version: 0.1.0
-appVersion: "m2"
+version: 0.9.6
+appVersion: "v0.9.6"
 
 dependencies:
   - name: redis
-    version: "18.19.4"
+    version: 0.9.6
     repository: "oci://registry-1.docker.io/bitnamicharts"
     condition: config.distributedCache.enabled
