@@ -50,10 +50,8 @@ resource "azurerm_kubernetes_cluster" "main" {
   tags = var.tags
 }
 
-# Attach ACR to AKS cluster (if ACR ID is provided)
+# Attach ACR to AKS cluster
 resource "null_resource" "attach_acr" {
-  count = var.acr_id != "" ? 1 : 0
-  
   provisioner "local-exec" {
     command = "az aks update --name ${azurerm_kubernetes_cluster.main.name} --resource-group ${var.resource_group_name} --attach-acr ${var.acr_id}"
   }
