@@ -53,10 +53,53 @@ resource "azurerm_kubernetes_cluster" "main" {
 # Attach ACR to AKS cluster
 resource "null_resource" "attach_acr" {
   provisioner "local-exec" {
-    command = "az aks update --name ${azurerm_kubernetes_cluster.main.name} --resource-group ${var.resource_group_name} --attach-acr ${var.acr_id}"
+    command = <<-EOT
+      # Wait for all node pool operations to complete
+      echo "Waiting for AKS operations to complete..."
+      MAX_ATTEMPTS=60
+      for i in $(seq 1 $MAX_ATTEMPTS); do
+        # Check cluster provisioning state
+        CLUSTER_STATUS=$(az aks show -n ${azurerm_kubernetes_cluster.main.name} -g ${var.resource_group_name} --query "provisioningState" -o tsv 2>/dev/null || echo "Unknown")
+        echo "Cluster status: $CLUSTER_STATUS"
+        
+        # Check for any ongoing node pool operations
+        NODEPOOL_OPERATIONS=$(az aks nodepool list --cluster-name ${azurerm_kubernetes_cluster.main.name} --resource-group ${var.resource_group_name} --query "[?provisioningState!='Succeeded'].name" -o tsv 2>/dev/null || echo "")
+        
+        if [ "$CLUSTER_STATUS" = "Succeeded" ] && [ -z "$NODEPOOL_OPERATIONS" ]; then
+          echo "AKS cluster and all node pools are ready"
+          break
+        fi
+        
+        if [ -n "$NODEPOOL_OPERATIONS" ]; then
+          echo "Waiting for node pool operations to complete: $NODEPOOL_OPERATIONS"
+        fi
+        
+        if [ $i -eq $MAX_ATTEMPTS ]; then
+          echo "Timeout waiting for AKS operations to complete"
+          exit 1
+        fi
+        
+        echo "Waiting for AKS to be ready... (attempt $i/$MAX_ATTEMPTS)"
+        sleep 20
+      done
+      
+      # Additional wait to ensure operations are fully settled
+      echo "Waiting additional 30 seconds for operations to settle..."
+      sleep 30
+      
+      # Now attach ACR
+      echo "Attaching ACR to AKS..."
+      az aks update --name ${azurerm_kubernetes_cluster.main.name} --resource-group ${var.resource_group_name} --attach-acr ${var.acr_id}
+    EOT
+    
+    interpreter = ["bash", "-c"]
   }
   
-  depends_on = [azurerm_kubernetes_cluster.main]
+  depends_on = [
+    azurerm_kubernetes_cluster.main,
+    azurerm_kubernetes_cluster_node_pool.workload,
+    azurerm_kubernetes_cluster_node_pool.arm64
+  ]
 }
 
 # Additional node pool for workloads
