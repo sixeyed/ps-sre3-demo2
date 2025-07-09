@@ -62,7 +62,7 @@ jobs:
         tags: |
           type=ref,event=pr
           type=sha,prefix=pr-${{ github.event.number }}-
-          type=sha
+          type=sha,prefix=
 
     - name: Extract metadata for staging worker image
       id: meta-worker-staging
@@ -72,7 +72,7 @@ jobs:
         tags: |
           type=ref,event=pr
           type=sha,prefix=pr-${{ github.event.number }}-
-          type=sha
+          type=sha,prefix=
 
     - name: Build and push staging web image
       uses: docker/build-push-action@v5
