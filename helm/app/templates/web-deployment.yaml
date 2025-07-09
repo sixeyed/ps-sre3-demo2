@@ -41,8 +41,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          image: alpine:latest
-          command: ["sleep", "infinity"]
+          image: "{{ .Values.imageRegistry.domain }}/{{ .Values.imageRegistry.repository }}/{{ .Values.web.image.imageName }}:{{ .Values.web.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.web.image.pullPolicy }}
           ports:
             - name: http
@@ -50,9 +49,7 @@ spec:
               protocol: TCP
           env:
             - name: ASPNETCORE_ENVIRONMENT
-              value: "Production"
-          volumeMounts:
-            - name: config-volume
+              value: "{{ include "reliability-demo.fullname" . }}-config: config-volume
               mountPath: /app/config
               readOnly: true
           {{- if .Values.web.livenessProbe }}
