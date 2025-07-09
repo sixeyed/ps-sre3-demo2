@@ -1,13 +1,10 @@
-# Demo 2: Production-Ready GitOps Recording Guide
+# Demo 2: Production-Ready GitOps
 
 ## Pre-Demo Setup
 
-- Azure subscription with contributor access
-- PowerShell 7+
-- GitHub repository with secrets configured
-- kubectl installed
+- Deploy infra and baseline build with GitHub Actions
 
-## Demo Recording Steps
+## Demo 
 
 ### Check Infrastracture Deployment
 
