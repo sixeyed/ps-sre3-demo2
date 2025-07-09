@@ -7,9 +7,21 @@ on:
       - 'src/**'
       - 'helm/**'
       - '.github/workflows/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment for ACR (demo, staging, production)'
+        required: false
+        default: 'production'
+        type: choice
+        options:
+          - demo
+          - staging
+          - production
 
 env:
-  ACR_REGISTRY: reliabilitydemoacrdemo.azurecr.io
+  ACR_ENVIRONMENT: ${{ github.event.inputs.environment || 'production' }}
+  ACR_REGISTRY: reliabilitydemoacr${{ github.event.inputs.environment || 'production' }}.azurecr.io
   STAGING_WEB_IMAGE_NAME: sixeyed-staging/reliability-demo
   STAGING_WORKER_IMAGE_NAME: sixeyed-staging/reliability-demo-worker
 
@@ -40,7 +52,7 @@ jobs:
 
     - name: Log in to Azure Container Registry
       run: |
-        az acr login --name reliabilitydemoacrdemo
+        az acr login --name reliabilitydemoacr${{ env.ACR_ENVIRONMENT }}
 
     - name: Extract metadata for staging web image
       id: meta-web-staging
