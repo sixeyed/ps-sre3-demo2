@@ -121,6 +121,8 @@ Write-Host ""
 Write-Host "Verifying cluster version..." -ForegroundColor Yellow
 kubectl get nodes -o wide
 
+Start-Sleep -Seconds 10
+
 Write-Host "Deploying logging subsystem..." -ForegroundColor Yellow
 ../../helm/lgtm/install.ps1
 
