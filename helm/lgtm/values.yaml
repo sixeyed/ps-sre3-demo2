@@ -89,9 +89,8 @@ grafana:
   enabled: true
   fullnameOverride: "grafana"
   
-  # Default admin credentials
+  # Default admin credentials - password will be auto-generated
   adminUser: admin
-  adminPassword: admin123
   
   # Enable persistence for dashboards and config
   persistence:
@@ -129,11 +128,10 @@ grafana:
       label: grafana_dashboard
       folder: /tmp/dashboards
   
-  # Enable anonymous access with admin rights
+  # Disable anonymous access for security
   grafana.ini:
     auth.anonymous:
-      enabled: true
-      org_role: Admin
+      enabled: false
     server:
       root_url: "%(protocol)s://%(domain)s:%(http_port)s/"
       serve_from_sub_path: false

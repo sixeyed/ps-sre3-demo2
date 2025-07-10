@@ -182,3 +182,6 @@ try {
 Write-Host "`nSetup complete!" -ForegroundColor Green
 Write-Host "`nREMEMBER: This infrastructure is expensive!" -ForegroundColor Yellow
 Write-Host "Run the cleanup script when the demo is complete." -ForegroundColor Yellow
+
+Write-Host "`nIf you encounter Terraform state lock issues:" -ForegroundColor Yellow
+Write-Host "Run: gh workflow run deploy-infrastructure.yml --repo sixeyed/ps-sre3-demo2 --field environment=production --field action=destroy" -ForegroundColor White
