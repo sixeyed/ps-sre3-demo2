@@ -1,0 +1,74 @@
+# K6 Test Suite Configuration for Azure Demo
+# This file only overrides values that differ from the base values.yaml
+
+# Target application configuration for Azure
+target:
+  service: "reliability-demo.reliability-demo.svc.cluster.local"
+  port: 80
+
+# Extended test configuration for Azure demo
+tests:
+  sequential:
+    activeDeadlineSeconds: 7800  # 2 hours 10 minutes timeout
+    
+    # Increased resources for longer tests
+    resources:
+      requests:
+        memory: "2G"
+        cpu: "2"
+      limits:
+        memory: "4G"
+        cpu: "4"
+    
+    # Azure demo test sequence
+    sequence:
+      - name: "Soak Test"
+        script: "customer-soak-test.js"
+        duration: "2h"
+        description: "40 constant users testing GET /api/customers for 2 hours"
+      - name: "Load Test"
+        script: "customer-load-test.js" 
+        duration: "30m"
+        description: "Ramping load creating customers (10→30→70→50→10 users) for 30 minutes"
+      - name: "Spike Test"
+        script: "customer-spike-test.js"
+        duration: "10m"
+        description: "Quick spike to 150 users then recovery for 10 minutes"
+
+# Azure demo test parameters
+scripts:
+  # Soak test - 2 hours with 40 VUs
+  soak:
+    scenarios:
+      vus: 40
+      duration: "2h"
+  
+  # Load test - 30m, double all targets
+  load:
+    scenarios:
+      stages:
+        - duration: "1m"
+          target: 10
+        - duration: "5m"
+          target: 30
+        - duration: "10m"
+          target: 70
+        - duration: "10m"
+          target: 50
+        - duration: "4m"
+          target: 10
+  
+  # Spike test - 10m, triple all targets
+  spike:
+    scenarios:
+      stages:
+        - duration: "1m"
+          target: 15
+        - duration: "30s"
+          target: 150
+        - duration: "6m"
+          target: 150
+        - duration: "30s"
+          target: 15
+        - duration: "2m"
+          target: 15
