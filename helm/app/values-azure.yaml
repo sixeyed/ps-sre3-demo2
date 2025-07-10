@@ -1,8 +1,8 @@
 # Azure-specific overrides for Reliability Demo application
 
-# Image registry configuration for Azure (ACR)
+# Image registry configuration for Azure (Docker Hub)
 imageRegistry:
-  domain: "reliabilitydemoacrproduction.azurecr.io"
+  domain: "docker.io"
   repository: "sixeyed"  # Production repository
 
 # Web API configuration  

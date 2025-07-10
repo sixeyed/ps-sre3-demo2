@@ -3,19 +3,19 @@
 # Image registry configuration
 imageRegistry:
   # Container registry domain (e.g., docker.io, ghcr.io, myregistry.azurecr.io)
-  domain: "reliabilitydemoacrproduction.azurecr.io"
+  domain: "docker.io"
   # Repository name (e.g., sixeyed, sixeyed-staging)
   repository: "sixeyed"
 
 # Architecture configuration
 architecture:
   # Target CPU architecture: amd64 or arm64
-  nodeArch: "amd64"
+  nodeArch: "arm64"
 
 # Global node selector and scheduling configuration
 nodeSelector:
-  kubernetes.io/arch: amd64
-  nodepool: default
+  kubernetes.io/arch: arm64
+  nodepool: arm64
 tolerations: []
 affinity: {}
 
@@ -24,7 +24,7 @@ web:
   replicaCount: 6
   image:
     imageName: reliability-demo
-    tag: "v0.9.9"
+    tag: "m3"
     pullPolicy: Always
   service:
     type: LoadBalancer
@@ -68,7 +68,7 @@ worker:
   replicaCount: 2
   image:
     imageName: reliability-demo-worker
-    tag: "v0.9.9"
+    tag: "m3"
     pullPolicy: Always
   resources:
     requests:

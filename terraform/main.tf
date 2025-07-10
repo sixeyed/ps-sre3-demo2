@@ -69,23 +69,6 @@ resource "azurerm_log_analytics_workspace" "main" {
   tags = var.tags
 }
 
-# Azure Container Registry
-resource "azurerm_container_registry" "main" {
-  name                = var.acr_name
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
-  sku                 = var.acr_sku
-  admin_enabled       = var.acr_admin_enabled
-
-  # Enable public network access (Standard SKU doesn't support network rules)
-  public_network_access_enabled = true
-
-  tags = var.tags
-}
-
-# Note: AKS-to-ACR integration is handled via attach_acr parameter in AKS module
-# This avoids needing role assignment permissions for the service principal
-
 # AKS Cluster
 module "aks" {
   source = "./modules/aks"
@@ -113,9 +96,6 @@ module "aks" {
   # Enable monitoring with Log Analytics
   log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
   
-  # Attach ACR to AKS (handles role assignment automatically)
-  acr_id = azurerm_container_registry.main.id
-
   tags = var.tags
 }
 
@@ -203,19 +183,3 @@ output "log_analytics_workspace_id" {
   value = azurerm_log_analytics_workspace.main.id
 }
 
-output "acr_name" {
-  value = azurerm_container_registry.main.name
-}
-
-output "acr_login_server" {
-  value = azurerm_container_registry.main.login_server
-}
-
-output "acr_admin_username" {
-  value = azurerm_container_registry.main.admin_username
-}
-
-output "acr_admin_password" {
-  value     = azurerm_container_registry.main.admin_password
-  sensitive = true
-}

@@ -111,25 +111,3 @@ variable "arm64_max_node_count" {
   default     = 3
 }
 
-# Azure Container Registry variables
-variable "acr_name" {
-  description = "Name of the Azure Container Registry"
-  type        = string
-  default     = "reliabilitydemoacr"
-}
-
-variable "acr_sku" {
-  description = "SKU for Azure Container Registry"
-  type        = string
-  default     = "Standard"
-  validation {
-    condition     = contains(["Basic", "Standard", "Premium"], var.acr_sku)
-    error_message = "ACR SKU must be Basic, Standard, or Premium."
-  }
-}
-
-variable "acr_admin_enabled" {
-  description = "Enable admin user for Azure Container Registry"
-  type        = bool
-  default     = true
-}
