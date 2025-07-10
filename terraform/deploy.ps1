@@ -178,12 +178,10 @@ switch ($Action) {
         # Set resource names based on environment
         $resourceGroupName = "reliability-demo-$Environment"
         $clusterName = "aks-reliability-demo-$Environment"
-        $acrName = "reliabilitydemoacr$Environment"
         
         terraform plan `
             -var="resource_group_name=$resourceGroupName" `
             -var="cluster_name=$clusterName" `
-            -var="acr_name=$acrName" `
             -var="location=$Location" `
             -out=tfplan
         
@@ -210,13 +208,11 @@ switch ($Action) {
             # Set resource names based on environment
             $resourceGroupName = "reliability-demo-$Environment"
             $clusterName = "aks-reliability-demo-$Environment"
-            $acrName = "reliabilitydemoacr$Environment"
             
             $planArgs = @(
                 "plan"
                 "-var=resource_group_name=$resourceGroupName"
                 "-var=cluster_name=$clusterName"
-                "-var=acr_name=$acrName"
                 "-var=location=$Location"
                 "-out=tfplan"
             )
@@ -291,19 +287,16 @@ switch ($Action) {
         # Set resource names based on environment
         $resourceGroupName = "reliability-demo-$Environment"
         $clusterName = "aks-reliability-demo-$Environment"
-        $acrName = "reliabilitydemoacr$Environment"
         
         if ($AutoApprove) {
             terraform destroy -auto-approve `
                 -var="resource_group_name=$resourceGroupName" `
                 -var="cluster_name=$clusterName" `
-                -var="acr_name=$acrName" `
                 -var="location=$Location"
         } else {
             terraform destroy `
                 -var="resource_group_name=$resourceGroupName" `
                 -var="cluster_name=$clusterName" `
-                -var="acr_name=$acrName" `
                 -var="location=$Location"
         }
         
