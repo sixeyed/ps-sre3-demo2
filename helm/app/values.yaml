@@ -123,10 +123,18 @@ redis:
     persistence:
       enabled: true
       size: 1Gi
+    # Redis requires AMD64 architecture
+    nodeSelector:
+      kubernetes.io/arch: amd64
+      nodepool: default
   replica:
     replicaCount: 2
     persistence:
       enabled: false
+    # Redis requires AMD64 architecture
+    nodeSelector:
+      kubernetes.io/arch: amd64
+      nodepool: default
 
 # SQL Server configuration
 sqlserver:
