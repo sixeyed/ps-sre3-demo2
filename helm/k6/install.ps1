@@ -6,6 +6,7 @@
 param(
     [string]$ReleaseName = "k6-tests",
     [string]$Namespace = "k6",
+    [string]$ValuesFile = "values-azure.yaml",
     [switch]$CleanupFirst = $false,
     [switch]$UpdateDependencies = $false
 )
@@ -38,9 +39,14 @@ if ($UpdateDependencies) {
 
 # Install the K6 test suite
 Write-Host "📦 Installing K6 test chart..." -ForegroundColor Green
+Write-Host "Values File: $ValuesFile" -ForegroundColor Yellow
+
+# Use layered values approach: base values.yaml + override file
 helm upgrade --install $ReleaseName . `
     --namespace $Namespace `
-    --create-namespace 
+    --create-namespace `
+    --values values.yaml `
+    --values $ValuesFile 
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""

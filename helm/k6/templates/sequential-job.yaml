@@ -36,6 +36,10 @@ spec:
           value: "{{ .Values.target.port }}"
         resources:
           {{- toYaml .Values.tests.sequential.resources | nindent 10 }}
+      {{- with .Values.tests.sequential.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       volumes:
       - name: k6-script
         configMap:
