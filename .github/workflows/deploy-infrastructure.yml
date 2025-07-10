@@ -276,7 +276,7 @@ jobs:
         "### Grafana Dashboard" | Add-Content $env:GITHUB_STEP_SUMMARY
         if ($grafanaIp -and $grafanaIp -ne "null") {
           "- **IP Address:** $grafanaIp" | Add-Content $env:GITHUB_STEP_SUMMARY
-          "- **URL:** http://$grafanaIp:3000" | Add-Content $env:GITHUB_STEP_SUMMARY
+          "- **URL:** http://$grafanaIp" | Add-Content $env:GITHUB_STEP_SUMMARY
         } else {
           "- **Status:** Load balancer IP not yet assigned" | Add-Content $env:GITHUB_STEP_SUMMARY
           "- **Access:** kubectl port-forward svc/grafana -n monitoring 3000:3000" | Add-Content $env:GITHUB_STEP_SUMMARY

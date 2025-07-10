@@ -119,7 +119,8 @@ grafana:
   # Service configuration
   service:
     type: LoadBalancer
-    port: 3000
+    port: 80
+    targetPort: 3000
   
   # Dashboard provider configuration - simplified
   sidecar:
