@@ -100,9 +100,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "arm64" {
   }
   
   # Node taints to ensure only ARM64 workloads are scheduled
-  node_taints = [
-    "nodepool=arm64:NoSchedule"
-  ]
+  node_taints = []
   
   tags = var.tags
 }

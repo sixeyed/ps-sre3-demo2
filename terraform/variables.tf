@@ -102,7 +102,7 @@ variable "arm64_node_count" {
 variable "arm64_min_node_count" {
   description = "Minimum number of ARM64 nodes for autoscaling"
   type        = number
-  default     = 0
+  default     = 1
 }
 
 variable "arm64_max_node_count" {
