@@ -108,7 +108,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "rate({namespace=\"sre3-m1\", app=\"reliability-demo\"}[1m])",
+          "expr": "rate({namespace=\"reliability-demo\", app=\"reliability-demo\"}[1m])",
           "legendFormat": "{{pod}}",
           "queryType": "",
           "refId": "A"
@@ -175,7 +175,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} [$__range]))",
+          "expr": "sum(count_over_time({namespace=\"reliability-demo\", app=\"reliability-demo\"} [$__range]))",
           "legendFormat": "Total Logs",
           "queryType": "",
           "refId": "A"
@@ -247,7 +247,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json LogLevel | LogLevel = `Warning` [$__range]))",
+          "expr": "sum(count_over_time({namespace=\"reliability-demo\", app=\"reliability-demo\"} | json LogLevel | LogLevel = `Warning` [$__range]))",
           "legendFormat": "Warning Logs",
           "queryType": "",
           "refId": "A"
@@ -319,7 +319,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json LogLevel | LogLevel = `Error` [$__range]))",
+          "expr": "sum(count_over_time({namespace=\"reliability-demo\", app=\"reliability-demo\"} | json LogLevel | LogLevel = `Error` [$__range]))",
           "legendFormat": "Error Logs",
           "queryType": "",
           "refId": "A"
@@ -461,7 +461,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(rate({namespace=\"sre3-m1\", app=\"reliability-demo\"} |= \"timeout\" [1m]))",
+          "expr": "sum(rate({namespace=\"reliability-demo\", app=\"reliability-demo\"} |= \"timeout\" [1m]))",
           "legendFormat": "Timeout",
           "queryType": "",
           "refId": "A"
@@ -472,7 +472,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(rate({namespace=\"sre3-m1\", app=\"reliability-demo\"} |= \"failure\" [1m]))",
+          "expr": "sum(rate({namespace=\"reliability-demo\", app=\"reliability-demo\"} |= \"failure\" [1m]))",
           "legendFormat": "Connection Failure",
           "queryType": "",
           "refId": "B"
@@ -483,7 +483,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(rate({namespace=\"sre3-m1\", app=\"reliability-demo\"} |= \"load\" [1m]))",
+          "expr": "sum(rate({namespace=\"reliability-demo\", app=\"reliability-demo\"} |= \"load\" [1m]))",
           "legendFormat": "Induced Delay",
           "queryType": "",
           "refId": "C"
@@ -692,7 +692,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json EventId | EventId = \"2007\" [$__range]))",
+          "expr": "sum(count_over_time({namespace=\"reliability-demo\", app=\"reliability-demo\"} | json EventId | EventId = \"2007\" [$__range]))",
           "legendFormat": "Fetch All",
           "queryType": "",
           "refId": "A"
@@ -703,7 +703,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json EventId | EventId = \"2005\" [$__range]))",
+          "expr": "sum(count_over_time({namespace=\"reliability-demo\", app=\"reliability-demo\"} | json EventId | EventId = \"2005\" [$__range]))",
           "legendFormat": "Created",
           "queryType": "",
           "refId": "B"
@@ -714,7 +714,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json EventId | EventId = \"2003\" [$__range]))",
+          "expr": "sum(count_over_time({namespace=\"reliability-demo\", app=\"reliability-demo\"} | json EventId | EventId = \"2003\" [$__range]))",
           "legendFormat": "Fetch by Email",
           "queryType": "",
           "refId": "C"
@@ -923,7 +923,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json EventId | EventId = \"1001\" [$__range]))",
+          "expr": "sum(count_over_time({namespace=\"reliability-demo\", app=\"reliability-demo\"} | json EventId | EventId = \"1001\" [$__range]))",
           "legendFormat": "Connection Failure",
           "queryType": "",
           "refId": "A"
@@ -934,7 +934,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json EventId | EventId = \"1002\" [$__range]))",
+          "expr": "sum(count_over_time({namespace=\"reliability-demo\", app=\"reliability-demo\"} | json EventId | EventId = \"1002\" [$__range]))",
           "legendFormat": "Read Timeout",
           "queryType": "",
           "refId": "B"
@@ -945,7 +945,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json EventId | EventId = \"1003\" [$__range]))",
+          "expr": "sum(count_over_time({namespace=\"reliability-demo\", app=\"reliability-demo\"} | json EventId | EventId = \"1003\" [$__range]))",
           "legendFormat": "Write Timeout",
           "queryType": "",
           "refId": "C"
@@ -956,7 +956,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json EventId | EventId = \"1004\" [$__range]))",
+          "expr": "sum(count_over_time({namespace=\"reliability-demo\", app=\"reliability-demo\"} | json EventId | EventId = \"1004\" [$__range]))",
           "legendFormat": "Read Delay",
           "queryType": "",
           "refId": "D"
@@ -967,7 +967,7 @@
             "uid": "Loki"
           },
           "editorMode": "code",
-          "expr": "sum(count_over_time({namespace=\"sre3-m1\", app=\"reliability-demo\"} | json EventId | EventId = \"1005\" [$__range]))",
+          "expr": "sum(count_over_time({namespace=\"reliability-demo\", app=\"reliability-demo\"} | json EventId | EventId = \"1005\" [$__range]))",
           "legendFormat": "Client Throttling",
           "queryType": "",
           "refId": "E"
@@ -1005,7 +1005,7 @@
             "uid": "Loki"
           },
           "editorMode": "builder",
-          "expr": "{namespace=\"sre3-m1\", app=\"reliability-demo\"} | json LogLevel | LogLevel = `Error`",
+          "expr": "{namespace=\"reliability-demo\", app=\"reliability-demo\"} | json LogLevel | LogLevel = `Error`",
           "queryType": "",
           "refId": "A"
         }
@@ -1042,7 +1042,7 @@
             "uid": "Loki"
           },
           "editorMode": "builder",
-          "expr": "{namespace=\"sre3-m1\", app=\"reliability-demo\"} | json LogLevel | LogLevel = `Warning`",
+          "expr": "{namespace=\"reliability-demo\", app=\"reliability-demo\"} | json LogLevel | LogLevel = `Warning`",
           "queryType": "",
           "refId": "A"
         }
@@ -1079,7 +1079,7 @@
             "uid": "Loki"
           },
           "editorMode": "builder",
-          "expr": "{namespace=\"sre3-m1\", app=\"reliability-demo\"} | json LogLevel | LogLevel = `Information`",
+          "expr": "{namespace=\"reliability-demo\", app=\"reliability-demo\"} | json LogLevel | LogLevel = `Information`",
           "queryType": "",
           "refId": "A"
         }

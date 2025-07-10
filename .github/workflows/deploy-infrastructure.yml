@@ -256,10 +256,10 @@ jobs:
         "### ArgoCD Server" | Add-Content $env:GITHUB_STEP_SUMMARY
         if ($argoCdIp -and $argoCdIp -ne "null") {
           "- **IP Address:** $argoCdIp" | Add-Content $env:GITHUB_STEP_SUMMARY
-          "- **URL:** https://$argoCdIp" | Add-Content $env:GITHUB_STEP_SUMMARY
+          "- **URL:** http://$argoCdIp" | Add-Content $env:GITHUB_STEP_SUMMARY
         } else {
           "- **Status:** Load balancer IP not yet assigned" | Add-Content $env:GITHUB_STEP_SUMMARY
-          "- **Access:** kubectl port-forward svc/argocd-server -n argocd 8080:443" | Add-Content $env:GITHUB_STEP_SUMMARY
+          "- **Access:** kubectl port-forward svc/argocd-server -n argocd 8080:80" | Add-Content $env:GITHUB_STEP_SUMMARY
         }
         "" | Add-Content $env:GITHUB_STEP_SUMMARY
         

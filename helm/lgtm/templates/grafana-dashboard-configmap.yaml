@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reliability-demo-dashboard
+  namespace: {{ .Release.Namespace }}
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/name: {{ include "lgtm-monitoring.name" . }}
+    helm.sh/chart: {{ include "lgtm-monitoring.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  reliability-demo-logs.json: |
+{{ .Files.Get "dashboards/reliability-demo-logs.json" | indent 4 }}
