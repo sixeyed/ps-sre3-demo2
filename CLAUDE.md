@@ -89,6 +89,8 @@ The application uses ASP.NET Core 8.0 with:
 - **CustomerMessageWorker**: Separate containerized service that processes customer operation messages from Redis
 - **API Controllers**: RESTful endpoints for customer operations (`/api/customers`), configuration, and health checks
 - **Web Interface**: Customer management portal with create, read, update, delete operations and failure simulation
+- **OpenTelemetry Integration**: Prometheus metrics endpoint (`/metrics`) for KEDA autoscaling triggers
+- **KEDA ScaledObjects**: Event-driven autoscaling based on HTTP request metrics and Redis queue depth
 
 ## Common Commands
 
@@ -106,15 +108,15 @@ dotnet restore src/ReliabilityDemo/ReliabilityDemo.csproj
 
 ### Docker Image
 ```powershell
-# Quick build and push (uses m1-01 tag)
+# Quick build and push (uses m3 tag)
 ./build-and-push.ps1
 
 # Build and push with specific tag
 ./build-and-push.ps1 -Tag v1.0.0
 
 # Manual build and push
-docker build -t sixeyed/reliability-demo:m1-01 src/ReliabilityDemo/
-docker push sixeyed/reliability-demo:m1-01
+docker build -t sixeyed/reliability-demo:m3 src/ReliabilityDemo/
+docker push sixeyed/reliability-demo:m3
 ```
 
 
@@ -124,25 +126,25 @@ docker push sixeyed/reliability-demo:m1-01
 docker-compose up --build
 
 # Build individual containers
-docker build -t sixeyed/reliability-demo:m1-01 src/ReliabilityDemo/
-docker build -t sixeyed/reliability-demo-worker:m1-01 src/ReliabilityDemo.Worker/
+docker build -t sixeyed/reliability-demo:m3 src/ReliabilityDemo/
+docker build -t sixeyed/reliability-demo-worker:m3 src/ReliabilityDemo.Worker/
 
 # Push to Docker Hub
-docker push sixeyed/reliability-demo:m1-01
-docker push sixeyed/reliability-demo-worker:m1-01
+docker push sixeyed/reliability-demo:m3
+docker push sixeyed/reliability-demo-worker:m3
 
 # Run API only (requires Redis for messaging)
-docker run -p 8080:8080 -e DataStore__Provider=Redis -e ConnectionStrings__Redis=redis:6379 sixeyed/reliability-demo:m1-01
+docker run -p 8080:8080 -e DataStore__Provider=Redis -e ConnectionStrings__Redis=redis:6379 sixeyed/reliability-demo:m3
 
 # Run Worker only (requires Redis + SQL Server)
-docker run -e ConnectionStrings__Redis=redis:6379 -e ConnectionStrings__SqlServer="Server=sqlserver;..." sixeyed/reliability-demo-worker:m1-01
+docker run -e ConnectionStrings__Redis=redis:6379 -e ConnectionStrings__SqlServer="Server=sqlserver;..." sixeyed/reliability-demo-worker:m3
 ```
 
 ### Helm
 ```powershell
 # Build and push Docker image first
-docker build -t sixeyed/reliability-demo:m1-01 src/ReliabilityDemo/
-docker push sixeyed/reliability-demo:m1-01
+docker build -t sixeyed/reliability-demo:m3 src/ReliabilityDemo/
+docker push sixeyed/reliability-demo:m3
 
 # Deploy with Redis backend (default)
 cd helm-chart
@@ -277,6 +279,14 @@ The web interface (`index.html`) provides:
 - **Reliability**: Worker container continues processing even if API instances restart
 - **Independent Scaling**: API and Worker containers can scale independently based on load patterns
 
+### KEDA Event-Driven Autoscaling (Demo 2)
+- **Web ScaledObject**: Scales based on HTTP request metrics from Prometheus (helm/app/templates/web-scaledobject.yaml)
+- **Worker ScaledObject**: Scales based on Redis queue depth (helm/app/templates/worker-scaledobject.yaml)  
+- **Metrics Source**: OpenTelemetry exports ASP.NET Core metrics to Prometheus endpoint
+- **Scaling Triggers**: HTTP requests per second (threshold: 50) and Redis list length (threshold: 3)
+- **Scaling Range**: Web 2-10 replicas, Worker 1-5 replicas
+- **Prometheus Integration**: KEDA queries Prometheus at `prometheus-server.monitoring.svc.cluster.local:80`
+
 ### Application Architecture  
 - All customer operations go through the `FailureSimulator` before hitting the data store
 - ASP.NET Core dependency injection configures data store provider based on `DataStore:Provider` setting
@@ -305,12 +315,14 @@ The project supports multiple infrastructure profiles for demonstrating differen
 - **Scaling**: 2-7 nodes with cluster autoscaler and KEDA enabled
 - **Resource Allocation**: Efficient resources (0.5 CPU request, 1.5 CPU limit, 1Gi RAM) with minimal replicas (2 web, 1 worker)
 - **KEDA Autoscaling**: HTTP request-based scaling using Prometheus metrics, Redis queue-based worker scaling
-- **Expected Behavior**: All tests pass through dynamic scaling, significant cost savings vs Demo 1
+- **OpenTelemetry Metrics**: Prometheus metrics endpoint for KEDA triggers (src/ReliabilityDemo/Program.cs)
+- **Expected Behavior**: All tests pass (224,670 total iterations), 85% cost savings vs Demo 1
 
 ### Key Differences
 - **Infrastructure Cost**: Demo 1 uses ~3x more compute resources
+- **Resource Groups**: Demo 1 uses `reliability-demo-production-m3demo1`, Demo 2 uses `reliability-demo-production-m3demo2`
 - **Scaling Strategy**: Demo 1 static vs Demo 2 dynamic
-- **Failure Behavior**: Demo 1 fails at connection limits, Demo 2 scales to handle load
+- **Failure Behavior**: Demo 1 fails at connection limits (600 users), Demo 2 scales to handle load
 - **Technology Stack**: Demo 2 adds KEDA, Prometheus, OpenTelemetry metrics
 
 ## Git Repository Configuration
@@ -360,7 +372,10 @@ gh workflow run deploy-infrastructure.yml -f environment=production -f action=ap
 # Run all tests (soak 10min, load 5min, spike 5min)
 ./run-k6-tests.ps1
 
+# Run Demo 1 tests on Demo 2 infrastructure (proves KEDA fixes issues)
+./run-k6-tests-demo1.ps1
+
 # Expected results:
-# Demo 1: Load ✓, Soak ✓, Spike ✗ (connection failures at 600 users)  
-# Demo 2: Load ✓, Soak ✓, Spike ✓ (KEDA scales to handle load)
+# Demo 1: Soak ✓, Load ✓, Spike ✗ (connection failures at 600 users)  
+# Demo 2: Soak ✓, Load ✓, Spike ✓ (224,670 iterations, KEDA scales to handle load)
 ```
