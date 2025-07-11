@@ -129,6 +129,15 @@ resource "kubernetes_namespace" "monitoring" {
   depends_on = [module.aks]
 }
 
+# KEDA for event-driven autoscaling (optional, installed before ArgoCD)
+module "keda" {
+  count = var.enable_keda ? 1 : 0
+  
+  source = "./modules/keda"
+
+  depends_on = [module.aks]
+}
+
 # ArgoCD
 module "argocd" {
   source = "./modules/argocd"
@@ -138,7 +147,7 @@ module "argocd" {
   depends_on = [module.aks]
 }
 
-# ArgoCD Applications
+# ArgoCD Applications (depends on KEDA if enabled)
 resource "helm_release" "argocd_apps" {
   name      = "argocd-apps"
   namespace = kubernetes_namespace.argocd.metadata[0].name
@@ -159,48 +168,7 @@ resource "helm_release" "argocd_apps" {
     value = var.tags.Profile != null ? var.tags.Profile : "default"
   }
 
-  depends_on = [module.argocd]
-}
-
-# KEDA for event-driven autoscaling (optional)
-resource "helm_release" "keda" {
-  count = var.enable_keda ? 1 : 0
-  
-  name       = "keda"
-  repository = "https://kedacore.github.io/charts"
-  chart      = "keda"
-  namespace  = "keda-system"
-  version    = "2.15.1"
-
-  create_namespace = true
-
-  set {
-    name  = "crds.install"
-    value = "true"
-  }
-
-  set {
-    name  = "operator.replicaCount" 
-    value = "2"
-  }
-
-  set {
-    name  = "metricsServer.replicaCount"
-    value = "2"
-  }
-
-  # Schedule KEDA on default nodes
-  set {
-    name  = "operator.nodeSelector.nodepool"
-    value = "default"
-  }
-
-  set {
-    name  = "metricsServer.nodeSelector.nodepool"
-    value = "default"
-  }
-
-  depends_on = [module.aks]
+  depends_on = var.enable_keda ? [module.argocd, module.keda[0]] : [module.argocd]
 }
 
 # Outputs

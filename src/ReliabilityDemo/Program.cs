@@ -5,6 +5,8 @@ using ReliabilityDemo.Models;
 using ReliabilityDemo.Services;
 using ReliabilityDemo.Messaging;
 using StackExchange.Redis;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +53,17 @@ else
     builder.Services.AddScoped<ICustomerOperationService, DirectCustomerService>();
 }
 
+// Add OpenTelemetry metrics
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(builder =>
+    {
+        builder
+            .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("reliability-demo"))
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddPrometheusExporter();
+    });
+
 // Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -69,6 +82,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
+
+// Add Prometheus metrics endpoint
+app.MapPrometheusScrapingEndpoint();
+
 app.MapControllers();
 
 // Serve static files for the web app
