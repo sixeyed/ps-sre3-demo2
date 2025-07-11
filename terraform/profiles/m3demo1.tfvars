@@ -11,12 +11,12 @@ enable_auto_scaling = false
 min_node_count = 3                    # Not used when autoscaling disabled
 max_node_count = 3                    # Not used when autoscaling disabled
 
-# Large ARM64 nodes for demonstration (adjusted for quota)
-enable_arm64_nodes = true
-arm64_node_vm_size = "Standard_D2ps_v5"  # 2 vCPUs, 8 GB RAM - ARM64 within quota
-arm64_node_count = 2                      # Reduced count to fit quota
-arm64_min_node_count = 2                  # Not used when autoscaling disabled  
-arm64_max_node_count = 2                  # Not used when autoscaling disabled
+# Disable ARM64 nodes to save quota for workload pool
+enable_arm64_nodes = false
+# arm64_node_vm_size = "Standard_D2ps_v5"  # 2 vCPUs, 8 GB RAM - ARM64 within quota
+# arm64_node_count = 2                      # Reduced count to fit quota
+# arm64_min_node_count = 2                  # Not used when autoscaling disabled  
+# arm64_max_node_count = 2                  # Not used when autoscaling disabled
 
 # Standard networking and disk settings
 node_disk_size = 100
