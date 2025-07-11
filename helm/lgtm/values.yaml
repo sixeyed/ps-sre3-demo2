@@ -257,7 +257,7 @@ prometheus:
   fullnameOverride: "prometheus"
   
   # Prometheus server configuration
-  prometheus-server:
+  server:
     enabled: true
     fullnameOverride: "prometheus-server"
     
@@ -303,7 +303,7 @@ prometheus:
             action: replace
             target_label: __address__
             regex: (.+)
-            replacement: ${1}
+            replacement: ${1}:8080
           # Use custom path if specified
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
             action: replace
@@ -318,13 +318,13 @@ prometheus:
             target_label: app
   
   # Disable components we don't need
-  prometheus-node-exporter:
+  nodeExporter:
     enabled: false
   
-  prometheus-pushgateway:
+  pushgateway:
     enabled: false
   
-  kube-state-metrics:
+  kubeStateMetrics:
     enabled: false
   
   alertmanager:

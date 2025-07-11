@@ -148,7 +148,7 @@ jobs:
         # Wait for ArgoCD applications to be created and synced
         "Waiting for ArgoCD applications to be deployed..." | Add-Content $env:GITHUB_STEP_SUMMARY
         
-        for ($i = 1; $i -le 60; $i++) {
+        for ($i = 1; $i -le 5; $i++) {
           # Check if applications exist
           try {
             $reliabilityAppStatus = kubectl get application reliability-demo -n argocd -o jsonpath='{.status.health.status}' 2>$null
@@ -176,7 +176,7 @@ jobs:
             kubectl get applications -n argocd
           }
           
-          Start-Sleep 10
+          Start-Sleep 8
         }
 
     - name: Get Load Balancer IP Addresses
@@ -191,7 +191,7 @@ jobs:
         
         # Get ArgoCD Server IP
         $argoCdIp = ""
-        for ($i = 1; $i -le 60; $i++) {
+        for ($i = 1; $i -le 5; $i++) {
           try {
             $argoCdIp = kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>$null
           } catch {
@@ -202,13 +202,13 @@ jobs:
             Write-Host "✓ ArgoCD IP found: $argoCdIp"
             break
           }
-          Write-Host "Waiting for ArgoCD load balancer IP... (attempt $i/60)"
-          Start-Sleep 10
+          Write-Host "Waiting for ArgoCD load balancer IP... (attempt $i/5)"
+          Start-Sleep 8
         }
         
         # Get Reliability Demo Web App IP
         $webAppIp = ""
-        for ($i = 1; $i -le 60; $i++) {
+        for ($i = 1; $i -le 5; $i++) {
           try {
             $webAppIp = kubectl get svc reliability-demo -n reliability-demo -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>$null
           } catch {
@@ -219,19 +219,19 @@ jobs:
             Write-Host "✓ Reliability Demo IP found: $webAppIp"
             break
           }
-          Write-Host "Waiting for Web App load balancer IP... (attempt $i/60)"
+          Write-Host "Waiting for Web App load balancer IP... (attempt $i/5)"
           # Check if service exists
           try {
             kubectl get svc reliability-demo -n reliability-demo 2>$null
           } catch {
             Write-Host "Service not found yet"
           }
-          Start-Sleep 10
+          Start-Sleep 8
         }
         
         # Get Grafana IP
         $grafanaIp = ""
-        for ($i = 1; $i -le 60; $i++) {
+        for ($i = 1; $i -le 5; $i++) {
           try {
             $grafanaIp = kubectl get svc grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>$null
           } catch {
@@ -242,14 +242,14 @@ jobs:
             Write-Host "✓ Grafana IP found: $grafanaIp"
             break
           }
-          Write-Host "Waiting for Grafana load balancer IP... (attempt $i/60)"
+          Write-Host "Waiting for Grafana load balancer IP... (attempt $i/5)"
           # Check if service exists
           try {
             kubectl get svc grafana -n monitoring 2>$null
           } catch {
             Write-Host "Service not found yet"
           }
-          Start-Sleep 10
+          Start-Sleep 8
         }
         
         "### ArgoCD Server" | Add-Content $env:GITHUB_STEP_SUMMARY
