@@ -16,6 +16,10 @@ param(
     [string]$Location = "westeurope",
     
     [Parameter(Mandatory=$false)]
+    [ValidateSet("default", "m3demo1")]
+    [string]$Profile = "default",
+    
+    [Parameter(Mandatory=$false)]
     [switch]$AutoApprove,
     
     [Parameter(Mandatory=$false)]
@@ -44,6 +48,7 @@ Write-Success "=============================================="
 Write-Info "Action: $Action"
 Write-Info "Environment: $Environment"
 Write-Info "Location: $Location"
+Write-Info "Profile: $Profile"
 Write-Host ""
 
 # Check prerequisites
@@ -179,11 +184,27 @@ switch ($Action) {
         $resourceGroupName = "reliability-demo-$Environment"
         $clusterName = "aks-reliability-demo-$Environment"
         
-        terraform plan `
-            -var="resource_group_name=$resourceGroupName" `
-            -var="cluster_name=$clusterName" `
-            -var="location=$Location" `
-            -out=tfplan
+        # Build Terraform command with profile support
+        $planArgs = @(
+            "plan"
+            "-var=resource_group_name=$resourceGroupName"
+            "-var=cluster_name=$clusterName"
+            "-var=location=$Location"
+            "-out=tfplan"
+        )
+        
+        # Add profile-specific tfvars file if not default
+        if ($Profile -ne "default") {
+            $profileFile = "profiles/$Profile.tfvars"
+            if (Test-Path $profileFile) {
+                Write-Info "Using profile configuration: $profileFile"
+                $planArgs += "-var-file=$profileFile"
+            } else {
+                Write-Warning "Profile file $profileFile not found, using default configuration"
+            }
+        }
+        
+        terraform @planArgs
         
         if ($LASTEXITCODE -eq 0) {
             Write-Success "✓ Plan created successfully"
@@ -216,6 +237,17 @@ switch ($Action) {
                 "-var=location=$Location"
                 "-out=tfplan"
             )
+            
+            # Add profile-specific tfvars file if not default
+            if ($Profile -ne "default") {
+                $profileFile = "profiles/$Profile.tfvars"
+                if (Test-Path $profileFile) {
+                    Write-Info "Using profile configuration: $profileFile"
+                    $planArgs += "-var-file=$profileFile"
+                } else {
+                    Write-Warning "Profile file $profileFile not found, using default configuration"
+                }
+            }
             
             terraform @planArgs
             
@@ -288,17 +320,30 @@ switch ($Action) {
         $resourceGroupName = "reliability-demo-$Environment"
         $clusterName = "aks-reliability-demo-$Environment"
         
-        if ($AutoApprove) {
-            terraform destroy -auto-approve `
-                -var="resource_group_name=$resourceGroupName" `
-                -var="cluster_name=$clusterName" `
-                -var="location=$Location"
-        } else {
-            terraform destroy `
-                -var="resource_group_name=$resourceGroupName" `
-                -var="cluster_name=$clusterName" `
-                -var="location=$Location"
+        # Build Terraform destroy command with profile support
+        $destroyArgs = @(
+            "destroy"
+            "-var=resource_group_name=$resourceGroupName"
+            "-var=cluster_name=$clusterName"
+            "-var=location=$Location"
+        )
+        
+        # Add profile-specific tfvars file if not default
+        if ($Profile -ne "default") {
+            $profileFile = "profiles/$Profile.tfvars"
+            if (Test-Path $profileFile) {
+                Write-Info "Using profile configuration: $profileFile"
+                $destroyArgs += "-var-file=$profileFile"
+            } else {
+                Write-Warning "Profile file $profileFile not found, using default configuration"
+            }
         }
+        
+        if ($AutoApprove) {
+            $destroyArgs += "-auto-approve"
+        }
+        
+        terraform @destroyArgs
         
         if ($LASTEXITCODE -eq 0) {
             Write-Success "✓ Infrastructure destroyed successfully"
