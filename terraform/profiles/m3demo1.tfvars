@@ -1,10 +1,8 @@
 # M3 Demo 1 - Static Infrastructure Profile
 # This profile demonstrates wasted cloud resources with oversized VMs and no autoscaling
 
-# Basic configuration
-resource_group_name = "reliability-demo-m3demo1"
-cluster_name = "aks-reliability-demo-m3demo1"
-location = "westeurope"
+# Basic configuration - names will be set by the deploy script based on environment
+# Only override sizing and scaling parameters for this profile
 
 # Large VM sizes for demonstration of waste
 node_vm_size = "Standard_D8s_v5"     # 8 vCPUs, 32 GB RAM - latest D8 size
