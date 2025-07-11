@@ -86,8 +86,9 @@ worker:
     minAvailable: 1
 
 # Disable traditional HPA when using KEDA
-autoscaling:
-  enabled: false  # Disabled because KEDA manages scaling
+web:
+  autoscaling:
+    enabled: false  # Disabled because KEDA manages scaling
 
 worker:
   autoscaling:
