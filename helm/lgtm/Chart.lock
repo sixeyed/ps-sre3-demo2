@@ -8,5 +8,8 @@ dependencies:
 - name: promtail
   repository: https://grafana.github.io/helm-charts
   version: 6.15.5
-digest: sha256:086444a54bb2b9006268aed2872aa48d331247ee20794b5645af8f30e1672f6f
-generated: "2025-06-25T11:53:37.453363+01:00"
+- name: prometheus
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 25.27.0
+digest: sha256:1c0d9b0f6ea277cb293e962a0adfc9012e835adb9f85a8bbe3fcef41c8fbce92
+generated: "2025-07-11T14:08:29.225091+01:00"

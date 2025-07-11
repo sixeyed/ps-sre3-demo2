@@ -4,8 +4,9 @@
 # Usage: ./install.ps1 [ReleaseName] [Namespace]
 
 param(
-    [string]$ReleaseName = "monitoring",
-    [string]$Namespace = "logs",
+    [string]$ReleaseName = "lgtm-monitoring",
+    [string]$Namespace = "monitoring",
+    [string]$ValuesFile = "",
     [switch]$UpdateDependencies = $false
 )
 
@@ -30,11 +31,18 @@ if ($UpdateDependencies) {
 
 # Install or upgrade the release
 Write-Host "🔧 Installing/upgrading Helm release..." -ForegroundColor Blue
-$installResult = helm upgrade --install $ReleaseName . `
-    --namespace $Namespace `
-    --create-namespace `
-    --wait `
-    --timeout 10m
+
+# Build helm command
+$helmCmd = "helm upgrade --install $ReleaseName . --namespace $Namespace --create-namespace --wait --timeout 10m"
+
+# Add values file if specified
+if ($ValuesFile) {
+    Write-Host "Using values file: $ValuesFile" -ForegroundColor Yellow
+    $helmCmd += " -f $ValuesFile"
+}
+
+# Execute helm command
+$installResult = Invoke-Expression $helmCmd
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ Successfully installed LGTM monitoring stack!" -ForegroundColor Green
