@@ -358,7 +358,7 @@ switch ($Action) {
         Write-Info "This will forcefully unlock the Terraform state file."
         
         # Try to force unlock - we need to get the lock ID from the error
-        terraform force-unlock -force ff8a2955-3694-9e21-0eb7-7216f9730125
+        terraform force-unlock -force 62b98f02-90d8-bb8e-0da2-63e3e640036f
         
         if ($LASTEXITCODE -eq 0) {
             Write-Success "✓ State unlocked successfully"
