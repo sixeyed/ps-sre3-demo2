@@ -11,12 +11,12 @@ enable_auto_scaling = false
 min_node_count = 3                    # Not used when autoscaling disabled
 max_node_count = 3                    # Not used when autoscaling disabled
 
-# ARM64 nodes temporarily disabled due to standardDPSv5Family quota
-enable_arm64_nodes = false
-# arm64_node_vm_size = "Standard_D8ps_v5"  # 8 vCPUs, 32 GB RAM - ARM64 D8 equivalent
-# arm64_node_count = 3                      # Fixed size, no autoscaling
-# arm64_min_node_count = 3                  # Not used when autoscaling disabled  
-# arm64_max_node_count = 3                  # Not used when autoscaling disabled
+# ARM64 nodes with D8ps_v5 for app components
+enable_arm64_nodes = true
+arm64_node_vm_size = "Standard_D8ps_v5"  # 8 vCPUs, 32 GB RAM - ARM64 D8 equivalent
+arm64_node_count = 3                      # Fixed size, no autoscaling
+arm64_min_node_count = 3                  # Not used when autoscaling disabled  
+arm64_max_node_count = 3                  # Not used when autoscaling disabled
 
 # Standard networking and disk settings
 node_disk_size = 100
