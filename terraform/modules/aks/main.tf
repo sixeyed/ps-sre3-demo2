@@ -45,6 +45,15 @@ resource "azurerm_kubernetes_cluster" "main" {
   # Auto-upgrade for patch versions
   automatic_channel_upgrade = "patch"
   
+  # Cluster autoscaler profile
+  auto_scaler_profile {
+    scale_down_delay_after_add            = var.autoscaler_scale_down_delay_after_add
+    scale_down_unneeded                   = var.autoscaler_scale_down_unneeded_time
+    scale_down_utilization_threshold      = var.autoscaler_scale_down_utilization_threshold
+    skip_nodes_with_local_storage         = false
+    skip_nodes_with_system_pods           = false
+  }
+  
   tags = var.tags
 }
 

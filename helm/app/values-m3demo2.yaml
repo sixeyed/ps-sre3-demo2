@@ -27,29 +27,24 @@ worker:
 keda:
   enabled: true
   
-  # Web application scaling based on HTTP metrics
+  # Web application scaling based on HTTP request metrics
   web:
     enabled: true
     minReplicas: 2
     maxReplicas: 10
     triggers:
-      # HTTP requests per second trigger
+      # HTTP requests per second trigger - primary scaling metric
       - type: prometheus
         metadata:
           serverAddress: http://prometheus-server.monitoring.svc.cluster.local:80
           metricName: http_requests_per_second
           threshold: '50'
-          query: 'sum(rate(aspnetcore_requests_total{job="reliability-demo"}[2m]))'
-      # CPU utilization trigger (fallback)
+          query: 'sum(rate(aspnetcore_http_requests_total{job="reliability-demo"}[2m]))'
+      # CPU utilization trigger - fallback scaling metric
       - type: cpu
         metadata:
           type: Utilization
           value: '70'
-      # Memory utilization trigger (fallback)  
-      - type: memory
-        metadata:
-          type: Utilization
-          value: '80'
 
   # Worker scaling based on Redis queue depth
   worker:
@@ -105,3 +100,10 @@ worker:
     maxReplicas: 5
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
+
+# Prometheus metrics configuration
+prometheus:
+  scrape:
+    enabled: true
+    port: "8080"
+    path: "/metrics"

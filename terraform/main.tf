@@ -93,6 +93,11 @@ module "aks" {
   arm64_min_node_count = var.arm64_min_node_count
   arm64_max_node_count = var.arm64_max_node_count
 
+  # Cluster autoscaler configuration
+  autoscaler_scale_down_delay_after_add       = var.autoscaler_scale_down_delay_after_add
+  autoscaler_scale_down_unneeded_time         = var.autoscaler_scale_down_unneeded_time
+  autoscaler_scale_down_utilization_threshold = var.autoscaler_scale_down_utilization_threshold
+
   # Enable monitoring with Log Analytics
   log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
   
@@ -149,7 +154,53 @@ resource "helm_release" "argocd_apps" {
     value = var.git_target_revision
   }
 
+  set {
+    name  = "profile"
+    value = var.tags.Profile != null ? var.tags.Profile : "default"
+  }
+
   depends_on = [module.argocd]
+}
+
+# KEDA for event-driven autoscaling (optional)
+resource "helm_release" "keda" {
+  count = var.enable_keda ? 1 : 0
+  
+  name       = "keda"
+  repository = "https://kedacore.github.io/charts"
+  chart      = "keda"
+  namespace  = "keda-system"
+  version    = "2.15.1"
+
+  create_namespace = true
+
+  set {
+    name  = "crds.install"
+    value = "true"
+  }
+
+  set {
+    name  = "operator.replicaCount" 
+    value = "2"
+  }
+
+  set {
+    name  = "metricsServer.replicaCount"
+    value = "2"
+  }
+
+  # Schedule KEDA on default nodes
+  set {
+    name  = "operator.nodeSelector.nodepool"
+    value = "default"
+  }
+
+  set {
+    name  = "metricsServer.nodeSelector.nodepool"
+    value = "default"
+  }
+
+  depends_on = [module.aks]
 }
 
 # Outputs

@@ -31,6 +31,7 @@ on:
         options:
           - default
           - m3demo1
+          - m3demo2
 
 env:
   TERRAFORM_VERSION: '1.5.7'

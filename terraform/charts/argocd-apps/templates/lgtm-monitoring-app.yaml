@@ -14,6 +14,9 @@ spec:
     helm:
       valueFiles:
         - values.yaml        # Base LGTM configuration
+        {{- if eq .Values.profile "m3demo2" }}
+        - values-m3demo2.yaml # M3 Demo 2 profile with Prometheus enabled
+        {{- end }}
   
   destination:
     server: https://kubernetes.default.svc

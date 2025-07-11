@@ -13,6 +13,11 @@ spec:
     metadata:
       annotations:
         configmap/checksum: {{ include (print $.Template.BasePath "/web-configmap.yaml") . | sha256sum }}
+        {{- if .Values.prometheus.scrape.enabled }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.prometheus.scrape.port }}"
+        prometheus.io/path: "{{ .Values.prometheus.scrape.path }}"
+        {{- end }}
       labels:
         {{- include "reliability-demo.selectorLabels" . | nindent 8 }}
     spec:

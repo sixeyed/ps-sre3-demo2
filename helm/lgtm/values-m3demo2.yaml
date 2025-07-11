@@ -1,0 +1,9 @@
+# LGTM Stack configuration for M3 Demo 2 - with Prometheus enabled
+# This extends the base values.yaml with Prometheus for HTTP metrics
+
+# Enable Prometheus for metrics collection and KEDA scaling
+prometheus:
+  enabled: true
+
+# All other values inherit from base values.yaml
+# This minimal override file just enables the optional Prometheus component

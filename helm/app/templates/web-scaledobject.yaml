@@ -1,0 +1,21 @@
+{{- if and .Values.keda.enabled .Values.keda.web.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "reliability-demo.fullname" . }}-web
+  labels:
+    {{- include "reliability-demo.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ include "reliability-demo.fullname" . }}
+  minReplicaCount: {{ .Values.keda.web.minReplicas }}
+  maxReplicaCount: {{ .Values.keda.web.maxReplicas }}
+  {{- if .Values.keda.web.triggers }}
+  triggers:
+  {{- range .Values.keda.web.triggers }}
+  - type: {{ .type }}
+    metadata:
+      {{- toYaml .metadata | nindent 6 }}
+  {{- end }}
+  {{- end }}
+{{- end }}

@@ -15,6 +15,9 @@ spec:
       valueFiles:
         - values.yaml        # Base configuration
         - values-azure.yaml  # Azure-specific overrides including ACR registry
+        {{- if eq .Values.profile "m3demo2" }}
+        - values-m3demo2.yaml # M3 Demo 2 profile with KEDA and right-sized resources
+        {{- end }}
   
   destination:
     server: https://kubernetes.default.svc

@@ -19,7 +19,7 @@ This demo transforms the static, over-provisioned infrastructure from Demo 1 int
 - **Quick scale-up, gradual scale-down**: Avoid flapping while maintaining responsiveness
 
 ### Application Autoscaling with KEDA
-- **Web pods**: Scale based on HTTP request metrics from ASP.NET telemetry
+- **Web pods**: Scale based on CPU and memory utilization
 - **Worker pods**: Scale based on Redis queue depth
 - **CPU/Memory HPA**: Traditional horizontal pod autoscaling as baseline
 - **Event-driven scaling**: Proactive scaling before resource exhaustion
@@ -50,9 +50,9 @@ KEDA is automatically deployed via ArgoCD:
 
 ### 3. Application Configuration
 
-**Web Pods (HTTP-based scaling)**:
-- Scale on HTTP request rate from ASP.NET telemetry
-- Target: Maintain response times under load
+**Web Pods (Resource-based scaling)**:
+- Scale on CPU utilization (60%) and memory utilization (70%)
+- Target: Maintain responsive performance under load
 - Range: 2-10 replicas
 
 **Worker Pods (Queue-based scaling)**:

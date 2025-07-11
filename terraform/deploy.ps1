@@ -16,7 +16,7 @@ param(
     [string]$Location = "westeurope",
     
     [Parameter(Mandatory=$false)]
-    [ValidateSet("default", "m3demo1")]
+    [ValidateSet("default", "m3demo1", "m3demo2")]
     [string]$Profile = "default",
     
     [Parameter(Mandatory=$false)]

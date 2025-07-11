@@ -1,0 +1,21 @@
+{{- if and .Values.keda.enabled .Values.keda.worker.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "reliability-demo.fullname" . }}-worker
+  labels:
+    {{- include "reliability-demo.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ include "reliability-demo.fullname" . }}-worker
+  minReplicaCount: {{ .Values.keda.worker.minReplicas }}
+  maxReplicaCount: {{ .Values.keda.worker.maxReplicas }}
+  {{- if .Values.keda.worker.triggers }}
+  triggers:
+  {{- range .Values.keda.worker.triggers }}
+  - type: {{ .type }}
+    metadata:
+      {{- toYaml .metadata | nindent 6 }}
+  {{- end }}
+  {{- end }}
+{{- end }}

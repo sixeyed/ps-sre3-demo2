@@ -251,5 +251,84 @@ promtail:
       cpu: 100m
       memory: 128Mi
 
+# Prometheus configuration for metrics collection (optional)
+prometheus:
+  enabled: false  # Default to false to maintain backward compatibility
+  fullnameOverride: "prometheus"
+  
+  # Prometheus server configuration
+  prometheus-server:
+    enabled: true
+    fullnameOverride: "prometheus-server"
+    
+    # Use persistent storage for metrics
+    persistentVolume:
+      enabled: true
+      size: 8Gi
+      storageClass: null  # Use default storage class
+    
+    # Resource configuration
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+    
+    # Service configuration
+    service:
+      type: ClusterIP
+      port: 80
+      targetPort: 9090
+    
+    # Retention period for metrics
+    retention: "15d"
+    
+    # Scrape configuration for ASP.NET Core apps
+    extraScrapeConfigs: |
+      - job_name: 'reliability-demo'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - reliability-demo
+        relabel_configs:
+          # Only scrape pods with prometheus.io/scrape annotation
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          # Use custom port if specified
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            target_label: __address__
+            regex: (.+)
+            replacement: ${1}
+          # Use custom path if specified
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          # Add pod labels
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            target_label: app
+  
+  # Disable components we don't need
+  prometheus-node-exporter:
+    enabled: false
+  
+  prometheus-pushgateway:
+    enabled: false
+  
+  kube-state-metrics:
+    enabled: false
+  
+  alertmanager:
+    enabled: false
+
 # Namespace configuration
 createNamespace: false

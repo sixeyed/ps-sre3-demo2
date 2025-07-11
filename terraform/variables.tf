@@ -111,3 +111,29 @@ variable "arm64_max_node_count" {
   default     = 3
 }
 
+# KEDA configuration
+variable "enable_keda" {
+  description = "Enable KEDA for event-driven autoscaling"
+  type        = bool
+  default     = false
+}
+
+# Cluster autoscaler configuration
+variable "autoscaler_scale_down_delay_after_add" {
+  description = "Time to wait after scale up before considering scale down"
+  type        = string
+  default     = "10m"
+}
+
+variable "autoscaler_scale_down_unneeded_time" {
+  description = "Time a node should be unneeded before it is eligible for scale down"
+  type        = string
+  default     = "10m"
+}
+
+variable "autoscaler_scale_down_utilization_threshold" {
+  description = "Node utilization level below which a node can be considered for scale down"
+  type        = number
+  default     = 0.5
+}
+
