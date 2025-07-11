@@ -1,0 +1,65 @@
+# M3 Demo 1 Profile - Oversized Application Resources
+# This profile demonstrates wasted application resources with oversized CPU and memory requests
+
+# Image configuration
+image:
+  tag: "m3"
+
+# Registry configuration (inherits from values-azure.yaml)
+# Uses Azure Container Registry settings
+
+# Oversized resource configuration for demonstration
+resources:
+  limits:
+    cpu: 6000m      # 6 CPUs
+    memory: 12Gi    # 12 GB RAM
+  requests:
+    cpu: 4000m      # 4 CPUs  
+    memory: 12Gi    # 12 GB RAM
+
+# Apply oversized resources to worker pods as well
+worker:
+  resources:
+    limits:
+      cpu: 6000m    # 6 CPUs
+      memory: 12Gi  # 12 GB RAM
+    requests:
+      cpu: 4000m    # 4 CPUs
+      memory: 12Gi  # 12 GB RAM
+
+# Keep replica count reasonable for demo
+replicaCount: 6
+workerReplicaCount: 2
+
+# Node selector to ensure pods go to ARM64 nodes (as configured)
+nodeSelector:
+  kubernetes.io/arch: arm64
+  nodepool: arm64
+
+# Failure configuration optimized for demo
+config:
+  failureConfig:
+    connectionFailureRate: 0.1    # 10% connection failures
+    readTimeoutRate: 0.05         # 5% read timeouts  
+    writeTimeoutRate: 0.05        # 5% write timeouts
+    slowResponseRate: 0.15        # 15% slow responses
+    slowResponseDelayMs: 2000     # 2 second delays
+    readTimeoutMs: 5000           # 5 second read timeout
+    writeTimeoutMs: 5000          # 5 second write timeout
+
+# Data store configuration
+  dataStore:
+    provider: "Redis"
+  
+  redisDataStore:
+    maxConcurrentClients: 2       # Low concurrency for demonstration
+  
+  distributedCache:
+    enabled: true
+    expirationSeconds: 300
+
+# Messaging configuration  
+  messaging:
+    enabled: true
+    retryAttempts: 3
+    retryDelayMs: 1000

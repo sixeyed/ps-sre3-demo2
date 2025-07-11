@@ -23,6 +23,14 @@ on:
           - demo
           - staging
           - production
+      profile:
+        description: 'Infrastructure profile to use'
+        required: false
+        default: 'default'
+        type: choice
+        options:
+          - default
+          - m3demo1
 
 env:
   TERRAFORM_VERSION: '1.5.7'
@@ -64,41 +72,31 @@ jobs:
     - name: Execute Terraform Action
       shell: pwsh
       run: |
+        # Determine profile parameter
+        $profileParam = if ("${{ inputs.profile }}" -ne "default" -and "${{ inputs.profile }}" -ne "") { 
+          "-Profile ${{ inputs.profile }}" 
+        } else { 
+          "" 
+        }
+        
         # For apply, run plan first then apply
         if ("${{ inputs.action }}" -eq "apply") {
           Write-Host "Running plan first..."
-          ./deploy.ps1 `
-            -Action plan `
-            -Environment ${{ inputs.environment }} `
-            -Location "${{ vars.AZURE_LOCATION || 'westeurope' }}" `
-            -TerraformStateRG "${{ secrets.TERRAFORM_STATE_RG }}" `
-            -TerraformStateSA "${{ secrets.TERRAFORM_STATE_SA }}" `
-            -TerraformStateContainer "${{ secrets.TERRAFORM_STATE_CONTAINER }}"
+          $planCmd = "./deploy.ps1 -Action plan -Environment ${{ inputs.environment }} -Location `"${{ vars.AZURE_LOCATION || 'westeurope' }}`" -TerraformStateRG `"${{ secrets.TERRAFORM_STATE_RG }}`" -TerraformStateSA `"${{ secrets.TERRAFORM_STATE_SA }}`" -TerraformStateContainer `"${{ secrets.TERRAFORM_STATE_CONTAINER }}`" $profileParam"
+          Invoke-Expression $planCmd
           
           if ($LASTEXITCODE -eq 0) {
             Write-Host "Plan successful, proceeding with apply..."
-            ./deploy.ps1 `
-              -Action apply `
-              -Environment ${{ inputs.environment }} `
-              -Location "${{ vars.AZURE_LOCATION || 'westeurope' }}" `
-              -AutoApprove `
-              -TerraformStateRG "${{ secrets.TERRAFORM_STATE_RG }}" `
-              -TerraformStateSA "${{ secrets.TERRAFORM_STATE_SA }}" `
-              -TerraformStateContainer "${{ secrets.TERRAFORM_STATE_CONTAINER }}"
+            $applyCmd = "./deploy.ps1 -Action apply -Environment ${{ inputs.environment }} -Location `"${{ vars.AZURE_LOCATION || 'westeurope' }}`" -AutoApprove -TerraformStateRG `"${{ secrets.TERRAFORM_STATE_RG }}`" -TerraformStateSA `"${{ secrets.TERRAFORM_STATE_SA }}`" -TerraformStateContainer `"${{ secrets.TERRAFORM_STATE_CONTAINER }}`" $profileParam"
+            Invoke-Expression $applyCmd
           } else {
             Write-Error "Plan failed, aborting apply"
             exit 1
           }
         } else {
           # For destroy, run directly
-          ./deploy.ps1 `
-            -Action ${{ inputs.action }} `
-            -Environment ${{ inputs.environment }} `
-            -Location "${{ vars.AZURE_LOCATION || 'westeurope' }}" `
-            -AutoApprove `
-            -TerraformStateRG "${{ secrets.TERRAFORM_STATE_RG }}" `
-            -TerraformStateSA "${{ secrets.TERRAFORM_STATE_SA }}" `
-            -TerraformStateContainer "${{ secrets.TERRAFORM_STATE_CONTAINER }}"
+          $destroyCmd = "./deploy.ps1 -Action ${{ inputs.action }} -Environment ${{ inputs.environment }} -Location `"${{ vars.AZURE_LOCATION || 'westeurope' }}`" -AutoApprove -TerraformStateRG `"${{ secrets.TERRAFORM_STATE_RG }}`" -TerraformStateSA `"${{ secrets.TERRAFORM_STATE_SA }}`" -TerraformStateContainer `"${{ secrets.TERRAFORM_STATE_CONTAINER }}`" $profileParam"
+          Invoke-Expression $destroyCmd
         }
 
     - name: Save Terraform Outputs
