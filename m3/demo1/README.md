@@ -1,167 +1,99 @@
-# Demo 1: Static Infrastructure and Scaling Problems
+# Demo 1: Static Infrastructure Problems
 
 ## Pre-Demo Setup
 
-- Deploy AKS cluster with static configuration
-- Deploy application with fixed pod counts
-- Ensure monitoring stack is available
+- Deploy m3demo1 infrastructure profile with oversized static configuration
+- Run K6 tests to demonstrate failure at scale
 
 ## Demo
 
-### 1. Show Infrastructure Costs
+### Infrastructure Profile
 
-Connect to the production AKS cluster:
+- [terraform/profiles/m3demo1.tfvars](../../terraform/profiles/m3demo1.tfvars) - Oversized D8 VMs, no autoscaling
+
+- [script.ps1](script.ps1) - Infrastructure deployment script
+
+### Helm Configuration
+
+- [helm/app/values.yaml](../../helm/app/values.yaml) - Static pod counts, no HPA
+
+- [helm/app/templates/web-deployment.yaml](../../helm/app/templates/web-deployment.yaml) - Fixed replicas
+
+### Deploy Infrastructure
 
 ```powershell
-# Check cluster status
+# Deploy with m3demo1 profile  
+./setup.ps1
+```
+
+### Show Resource Waste
+
+```powershell
+# Check oversized nodes
 kubectl get nodes
 
-# Show node resources
+# Show low utilization
 kubectl top nodes
 
-# Check current pod deployment
+# View static deployments
 kubectl get deployments -n reliability-demo
 ```
 
-**Azure Cost Management Portal:**
-- Show current burn rate
-- Display projected monthly costs
-- Highlight compute-only costs (not including storage/networking)
+**Findings:**
+- 3x D8 VMs (8 CPU, 32GB) always running
+- ~5-10% CPU utilization most of the time
+- High monthly costs for idle capacity
 
-### 2. Resource Utilization Metrics
-
-Open monitoring dashboard:
-
-> http://localhost:3000
-
-**Key metrics to highlight:**
-- CPU utilization: ~5-10% across all nodes
-- Memory usage: Even lower than CPU
-- Node count: Fixed regardless of load
-- Pod count: Static from deployment specs
-
-Show pod resource requests:
+### Run K6 Load Tests
 
 ```powershell
-# Check pod resource requests
-kubectl describe deployment customer-api-web -n reliability-demo | grep -A 5 "Limits\|Requests"
-
-# Show current pod count
-kubectl get pods -n reliability-demo | grep -c "customer-api"
+# Run load tests
+./run-k6-tests.ps1
 ```
 
-### 3. Run K6 Load Tests
+**Test Sequence:**
+- Soak Test (10m, 40 VUs): ✅ PASS
+- Load Test (5m, 70 VUs): ✅ PASS  
+- Spike Test (5m, 600 VUs): ❌ **FAIL**
 
-Start the K6 test suite:
+### Analyze Failure
 
 ```powershell
-# Deploy K6 tests
-kubectl apply -f k6-tests.yaml
+# Check scaling status
+kubectl get hpa -n reliability-demo  # No HPA configured
 
-# Monitor test progress
-kubectl logs -f job/k6-tests -n reliability-demo
+# View pod limits 
+kubectl describe deployment reliability-demo -n reliability-demo
 ```
 
-**Test sequence:**
-1. **Soak Test**: Sustained read traffic for 5 minutes
-2. **Load Test**: Heavy write operations for 3 minutes  
-3. **Spike Test**: Sudden traffic surge simulation
-
-### 4. Analyze Test Results
-
-#### Soak Test Results
-- CPU remains in single digits
-- Memory flat throughout
-- Response times stable
-- Infrastructure vastly oversized for normal load
-
-#### Load Test Results  
-- CPU increases but stays < 20%
-- Write operations stress message queues
-- Worker pods can't keep up despite available resources
-- Pod count bottleneck emerges
-
-#### Spike Test Results
-- System fails despite 50% CPU headroom
-- Error rates climb rapidly
-- Response times spike
-- Pods overwhelmed at connection level
-
-### 5. Investigate Bottlenecks
-
-Check pod scaling:
-
-```powershell
-# Show fixed pod counts
-kubectl get deployment customer-api-web -n reliability-demo -o yaml | grep replicas
-
-# Check HPA status (none configured)
-kubectl get hpa -n reliability-demo
-
-# View message queue backup
-kubectl exec -it redis-0 -n reliability-demo -- redis-cli llen customer_operations
-```
-
-**Key findings:**
+**Root Cause:**
 - Fixed pod count regardless of load
-- No horizontal pod autoscaling configured
 - Each pod has connection limits
-- Message workers can't scale with queue depth
+- No horizontal scaling configured
+- 600 users overwhelm static pod count
 
-### 6. Show Cost Impact
-
-Return to idle state:
+### Cost Analysis
 
 ```powershell
-# Stop load tests
-kubectl delete job k6-tests -n reliability-demo
-
-# Watch metrics return to baseline
-kubectl top nodes --watch
+# Return to idle state
+kubectl top nodes
 ```
 
-**Cost analysis:**
+**Cost Impact:**
 - Resources return to ~5% utilization
-- Monthly cost remains unchanged
-- Annual projection: $XX,XXX
-- Most spending on idle capacity
+- Monthly cost unchanged despite failure
+- Paying for unused capacity 95% of time
 
-### 7. The Fundamental Problem
+## Key Problems
 
-Demonstrate the static infrastructure trap:
-
-1. **Over-provisioned**: Paying for unused resources 95% of the time
-2. **Under-performing**: Still fails during actual load spikes
-3. **No elasticity**: Can't scale pods even with available node resources
-4. **Manual intervention**: Scaling requires human action during incidents
-
-## Common Issues
-
-### Pod Resource Limits
-Current configuration uses production-like requests:
-- CPU Request: 1000m per pod
-- Memory Request: 2Gi per pod
-- No autoscaling configured
-
-### Message Queue Bottleneck
-- Fixed worker pod count
-- Messages accumulate faster than processing
-- No queue-depth-based scaling
-
-### Connection Limits
-- Each pod handles limited concurrent connections
-- Load balancer can't compensate for pod limits
-- More pods needed, not more CPU
+- **Over-provisioned**: Expensive idle infrastructure
+- **Under-performing**: Fails during load spikes  
+- **No elasticity**: Can't scale pods automatically
+- **Manual intervention**: Requires human action during incidents
 
 ## Next Steps
 
-This demo shows why static infrastructure fails:
-- Expensive when idle
-- Inadequate when loaded
-- No automatic adaptation
-
-The next demo will show SRE team's solution with:
-- Horizontal Pod Autoscaling (HPA)
-- Cluster autoscaling
-- Metrics-based scaling
-- Cost optimization
+Demo 2 will show the SRE solution:
+- KEDA autoscaling fixes the spike test failure
+- Dynamic scaling reduces costs by 85%
+- Same tests pass with right-sized infrastructure
