@@ -1,0 +1,107 @@
+# M3 Demo 2 - Dynamic Scaling Profile
+# This profile adds KEDA ScaledObjects for event-driven autoscaling
+
+# Right-sized resource configuration for efficiency
+replicaCount: 2  # Start with minimal replicas, let KEDA scale
+
+resources:
+  limits:
+    cpu: 1500m    # 1.5 CPUs - right-sized for efficiency
+    memory: 1Gi   # 1 GB RAM - right-sized for efficiency
+  requests:
+    cpu: 500m     # 0.5 CPU - minimal baseline
+    memory: 1Gi   # 1 GB RAM
+
+worker:
+  replicaCount: 1  # Start with single worker, let KEDA scale
+  
+  resources:
+    limits:
+      cpu: 1500m    # 1.5 CPUs - right-sized for efficiency
+      memory: 1Gi   # 1 GB RAM - right-sized for efficiency
+    requests:
+      cpu: 500m     # 0.5 CPU - minimal baseline
+      memory: 1Gi   # 1 GB RAM
+
+# Enable KEDA autoscaling
+keda:
+  enabled: true
+  
+  # Web application scaling based on HTTP metrics
+  web:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    triggers:
+      # HTTP requests per second trigger
+      - type: prometheus
+        metadata:
+          serverAddress: http://prometheus-server.monitoring.svc.cluster.local:80
+          metricName: http_requests_per_second
+          threshold: '50'
+          query: 'sum(rate(aspnetcore_requests_total{job="reliability-demo"}[2m]))'
+      # CPU utilization trigger (fallback)
+      - type: cpu
+        metadata:
+          type: Utilization
+          value: '70'
+      # Memory utilization trigger (fallback)  
+      - type: memory
+        metadata:
+          type: Utilization
+          value: '80'
+
+  # Worker scaling based on Redis queue depth
+  worker:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    triggers:
+      # Redis queue length trigger
+      - type: redis
+        metadata:
+          address: reliability-demo-redis-master.reliability-demo.svc.cluster.local:6379
+          listName: customer_operations
+          listLength: '3'
+          activationListLength: '1'
+      # CPU utilization trigger (fallback)
+      - type: cpu
+        metadata:
+          type: Utilization
+          value: '70'
+
+# Schedule pods on ARM64 nodes for app components
+nodeSelector:
+  kubernetes.io/arch: arm64
+  nodepool: arm64
+
+worker:
+  nodeSelector:
+    kubernetes.io/arch: arm64
+    nodepool: arm64
+
+# Pod disruption budgets for availability
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+worker:
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+# Enhanced horizontal pod autoscaler (traditional HPA as baseline)
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+worker:
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
