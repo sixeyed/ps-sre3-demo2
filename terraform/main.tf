@@ -168,7 +168,7 @@ resource "helm_release" "argocd_apps" {
     value = var.tags.Profile != null ? var.tags.Profile : "default"
   }
 
-  depends_on = var.enable_keda ? [module.argocd, module.keda[0]] : [module.argocd]
+  depends_on = [module.argocd]
 }
 
 # Outputs
