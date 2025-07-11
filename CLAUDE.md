@@ -285,3 +285,82 @@ The web interface (`index.html`) provides:
 - Swagger/OpenAPI documentation available in development mode
 - All failures are simulated - no actual network or database failures occur
 - Multiple application instances can share Redis/SQL Server for horizontal scaling
+
+## M3 Demo Infrastructure Profiles
+
+The project supports multiple infrastructure profiles for demonstrating different scaling patterns:
+
+### M3 Demo 1 - Static Over-Provisioned Infrastructure
+- **Profile**: `m3demo1` (terraform/profiles/m3demo1.tfvars)
+- **Purpose**: Demonstrate wasteful static infrastructure that fails under spike load
+- **VM Size**: Standard_D8s_v5 (8 vCPUs, 32 GB RAM) - intentionally oversized
+- **Scaling**: Fixed 3 nodes, no autoscaling
+- **Resource Allocation**: High CPU/memory limits (2 CPU, 2Gi RAM) with high replica counts (6 replicas)
+- **Expected Behavior**: Load and soak tests pass, spike test (600 users) fails due to connection limits
+
+### M3 Demo 2 - Dynamic Right-Sized Infrastructure  
+- **Profile**: `m3demo2` (terraform/profiles/m3demo2.tfvars)
+- **Purpose**: Demonstrate efficient dynamic scaling with KEDA
+- **VM Size**: Standard_D4s_v5 (4 vCPUs, 16 GB RAM) - right-sized for efficiency
+- **Scaling**: 2-7 nodes with cluster autoscaler and KEDA enabled
+- **Resource Allocation**: Efficient resources (0.5 CPU request, 1.5 CPU limit, 1Gi RAM) with minimal replicas (2 web, 1 worker)
+- **KEDA Autoscaling**: HTTP request-based scaling using Prometheus metrics, Redis queue-based worker scaling
+- **Expected Behavior**: All tests pass through dynamic scaling, significant cost savings vs Demo 1
+
+### Key Differences
+- **Infrastructure Cost**: Demo 1 uses ~3x more compute resources
+- **Scaling Strategy**: Demo 1 static vs Demo 2 dynamic
+- **Failure Behavior**: Demo 1 fails at connection limits, Demo 2 scales to handle load
+- **Technology Stack**: Demo 2 adds KEDA, Prometheus, OpenTelemetry metrics
+
+## Git Repository Configuration
+
+**IMPORTANT**: This repository has two git remotes configured:
+
+- **origin**: Internal git server (git.sixeyed)
+- **github**: Public GitHub repository (github.com/sixeyed/ps-sre3-demo2)
+
+### Git Remote Management
+```bash
+# Check current remotes
+git remote -v
+
+# Always push to GitHub for workflow triggers
+git push github main
+
+# Do NOT push to origin for GitHub Actions
+# GitHub workflows only trigger from the github remote
+```
+
+### GitHub Actions Deployment
+```bash
+# Deploy with specific profile (after pushing to github remote)
+gh workflow run deploy-infrastructure.yml -f environment=production -f action=apply -f profile=m3demo2 -R sixeyed/ps-sre3-demo2
+
+# CRITICAL: Always push changes to 'github' remote before triggering workflows
+# GitHub Actions will not see changes pushed only to 'origin'
+```
+
+## M3 Demo Workflow
+
+### Demo 1 Setup
+```powershell
+# From m3/demo1 directory
+./setup.ps1
+```
+
+### Demo 2 Setup  
+```powershell
+# From m3/demo2 directory
+./setup.ps1
+```
+
+### K6 Load Testing
+```powershell
+# Run all tests (soak 10min, load 5min, spike 5min)
+./run-k6-tests.ps1
+
+# Expected results:
+# Demo 1: Load ✓, Soak ✓, Spike ✗ (connection failures at 600 users)  
+# Demo 2: Load ✓, Soak ✓, Spike ✓ (KEDA scales to handle load)
+```
