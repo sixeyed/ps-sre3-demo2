@@ -263,7 +263,7 @@ Write-Host ""
 for ($i = $StartIteration; $i -le $MaxIterations -and $i -le $testConfigurations.Count; $i++) {
     $config = $testConfigurations[$i - 1]
     
-    Write-Success "=== Iteration $i/$MaxIterations: $($config.Name) ==="
+    Write-Success "=== Iteration $i/${MaxIterations}: $($config.Name) ==="
     Write-Host "Description: $($config.Description)" -ForegroundColor Yellow
     Write-Host ""
     

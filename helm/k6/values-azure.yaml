@@ -9,7 +9,7 @@ target:
 # Extended test configuration for Azure demo
 tests:
   sequential:
-    activeDeadlineSeconds: 7800  # 2 hours 10 minutes timeout
+    activeDeadlineSeconds: 1800  # 30 minutes timeout
     
     # Increased resources for longer tests
     resources:
@@ -29,51 +29,51 @@ tests:
     sequence:
       - name: "Soak Test"
         script: "customer-soak-test.js"
-        duration: "2h"
-        description: "40 constant users testing GET /api/customers for 2 hours"
+        duration: "10m"
+        description: "40 constant users testing GET /api/customers for 10 minutes"
       - name: "Load Test"
         script: "customer-load-test.js" 
-        duration: "30m"
-        description: "Ramping load creating customers (10→30→70→50→10 users) for 30 minutes"
+        duration: "5m"
+        description: "Ramping load creating customers (10→30→70→50→10 users) for 5 minutes"
       - name: "Spike Test"
         script: "customer-spike-test.js"
-        duration: "10m"
-        description: "Quick spike to 150 users then recovery for 10 minutes"
+        duration: "5m"
+        description: "Aggressive spike to 600 users for 5 minutes to test system limits"
 
 # Azure demo test parameters
 scripts:
-  # Soak test - 2 hours with 40 VUs
+  # Soak test - 10 minutes with 40 VUs
   soak:
     scenarios:
       vus: 40
-      duration: "2h"
+      duration: "10m"
   
-  # Load test - 30m, double all targets
+  # Load test - 5m ramping load
   load:
     scenarios:
       stages:
-        - duration: "1m"
+        - duration: "30s"
           target: 10
-        - duration: "5m"
+        - duration: "1m"
           target: 30
-        - duration: "10m"
+        - duration: "2m"
           target: 70
-        - duration: "10m"
+        - duration: "1m"
           target: 50
-        - duration: "4m"
+        - duration: "30s"
           target: 10
   
-  # Spike test - 10m, triple all targets
+  # Spike test - 5m, aggressive spike to test failure
   spike:
     scenarios:
       stages:
+        - duration: "30s"
+          target: 15
+        - duration: "15s"
+          target: 600
+        - duration: "3m"
+          target: 600
+        - duration: "15s"
+          target: 15
         - duration: "1m"
-          target: 15
-        - duration: "30s"
-          target: 150
-        - duration: "6m"
-          target: 150
-        - duration: "30s"
-          target: 15
-        - duration: "2m"
           target: 15
