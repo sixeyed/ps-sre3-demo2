@@ -4,19 +4,19 @@
 # Basic configuration - names will be set by the deploy script based on environment
 # Only override sizing and scaling parameters for this profile
 
-# Large VM sizes for demonstration of waste
-node_vm_size = "Standard_D8s_v5"     # 8 vCPUs, 32 GB RAM - latest D8 size
+# Large VM sizes for demonstration of waste (adjusted for quota)
+node_vm_size = "Standard_D4s_v5"     # 4 vCPUs, 16 GB RAM - large but within quota
 node_count = 3                        # Fixed size, no autoscaling
 enable_auto_scaling = false
 min_node_count = 3                    # Not used when autoscaling disabled
 max_node_count = 3                    # Not used when autoscaling disabled
 
-# Large ARM64 nodes for demonstration
+# Large ARM64 nodes for demonstration (adjusted for quota)
 enable_arm64_nodes = true
-arm64_node_vm_size = "Standard_D8ps_v5"  # 8 vCPUs, 32 GB RAM - ARM64 equivalent
-arm64_node_count = 3                      # Fixed size, no autoscaling
-arm64_min_node_count = 3                  # Not used when autoscaling disabled  
-arm64_max_node_count = 3                  # Not used when autoscaling disabled
+arm64_node_vm_size = "Standard_D2ps_v5"  # 2 vCPUs, 8 GB RAM - ARM64 within quota
+arm64_node_count = 2                      # Reduced count to fit quota
+arm64_min_node_count = 2                  # Not used when autoscaling disabled  
+arm64_max_node_count = 2                  # Not used when autoscaling disabled
 
 # Standard networking and disk settings
 node_disk_size = 100
