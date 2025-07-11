@@ -180,9 +180,14 @@ switch ($Action) {
     "plan" {
         Write-Info "Creating Terraform plan..."
         
-        # Set resource names based on environment
-        $resourceGroupName = "reliability-demo-$Environment"
-        $clusterName = "aks-reliability-demo-$Environment"
+        # Set resource names based on environment and profile
+        if ($Profile -ne "default") {
+            $resourceGroupName = "reliability-demo-$Environment-$Profile"
+            $clusterName = "aks-reliability-demo-$Environment-$Profile"
+        } else {
+            $resourceGroupName = "reliability-demo-$Environment"
+            $clusterName = "aks-reliability-demo-$Environment"
+        }
         
         # Build Terraform command with profile support
         $planArgs = @(
@@ -268,8 +273,13 @@ switch ($Action) {
             
             # Get AKS credentials
             Write-Info "Getting AKS credentials..."
-            $clusterName = "aks-reliability-demo-$Environment"
-            $resourceGroupName = "reliability-demo-$Environment"
+            if ($Profile -ne "default") {
+                $clusterName = "aks-reliability-demo-$Environment-$Profile"
+                $resourceGroupName = "reliability-demo-$Environment-$Profile"
+            } else {
+                $clusterName = "aks-reliability-demo-$Environment"
+                $resourceGroupName = "reliability-demo-$Environment"
+            }
             
             az aks get-credentials --resource-group $resourceGroupName --name $clusterName --overwrite-existing
             
@@ -316,9 +326,14 @@ switch ($Action) {
         
         Write-Info "Destroying infrastructure..."
         
-        # Set resource names based on environment
-        $resourceGroupName = "reliability-demo-$Environment"
-        $clusterName = "aks-reliability-demo-$Environment"
+        # Set resource names based on environment and profile
+        if ($Profile -ne "default") {
+            $resourceGroupName = "reliability-demo-$Environment-$Profile"
+            $clusterName = "aks-reliability-demo-$Environment-$Profile"
+        } else {
+            $resourceGroupName = "reliability-demo-$Environment"
+            $clusterName = "aks-reliability-demo-$Environment"
+        }
         
         # Build Terraform destroy command with profile support
         $destroyArgs = @(
