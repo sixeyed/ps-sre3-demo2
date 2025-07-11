@@ -20,7 +20,7 @@ arm64_max_node_count = 3                  # Not used when autoscaling disabled
 
 # Standard networking and disk settings
 node_disk_size = 100
-kubernetes_version = "1.28"
+# kubernetes_version = "1.28"  # Commented out - let Azure choose supported version
 
 # Git repository configuration for ArgoCD
 git_repo_url = "https://github.com/sixeyed/ps-sre3-demo2.git"
