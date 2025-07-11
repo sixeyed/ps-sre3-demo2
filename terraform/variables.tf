@@ -77,6 +77,7 @@ variable "tags" {
     Environment = "demo"
     ManagedBy   = "Terraform"
     Project     = "ReliabilityDemo"
+    Profile     = "default"
   }
 }
 
